@@ -10,3 +10,8 @@ Branch rdma-core:
 ```
 https://github.com/linux-rdma/rdma-core
 ```
+Branch rdma-tutorial
+```
+https://github.com/jcxue/RDMA-Tutorial/tree/master
+git checkout 65893ec
+```
