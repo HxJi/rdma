@@ -174,11 +174,15 @@ int setup_ib ()
         .cap = {
             .max_send_wr = ib_res.dev_attr.max_qp_wr,
             .max_recv_wr = ib_res.dev_attr.max_qp_wr,
+            // .max_send_wr = 2,
+            // .max_recv_wr = 2,
             .max_send_sge = 1,
             .max_recv_sge = 1,
         },
         .qp_type = IBV_QPT_RC,
     };
+
+    printf("non-empty qp_init_attr:%d, %d.\n",ib_res.dev_attr.max_qp_wr, ib_res.dev_attr.max_qp_wr);
 
     ib_res.qp = ibv_create_qp (ib_res.pd, &qp_init_attr);
     check (ib_res.qp != NULL, "Failed to create qp");
