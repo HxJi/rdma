@@ -843,10 +843,21 @@ static void krping_test_server(struct krping_cb *cb)
 				"server ping data (64B max): |%.64s|\n",
 				cb->rdma_buf);
 			printk(KERN_INFO PFX
-				"server ping data (200B max): |%d|\n",
+				"server ping data (4096B * 2 max): |%d|\n",
 				cb->rdma_buf);
 		}
-			
+		
+		// page comparsion
+		int cmp_res = 0;
+		int i;
+		printk(KERN_ERR PFX "start page comparsion.\n");
+		for(i = 0; i < 4096; i++){
+			if ((cmp_res = cb->rdma_buf[i] - cb->rdma_buf[i+4096]) != 0)
+				break;
+		}
+		printk(KERN_ERR PFX "page comparsion result:%d.\n", cmp_res);
+		
+		cb->rdma_buf[0] = 0;
 
 		/* Tell client to continue */
 		if (cb->server && cb->server_invalidate) {
@@ -1492,9 +1503,11 @@ static void krping_test_client(struct krping_cb *cb)
 
 	start = 65;
 	// create a user space page and return its address
-	unsigned char *su1;
-	char *page_addr = (char*)__get_free_page(GFP_NOWAIT);
-	su1 = page_addr;
+	unsigned char *su1, *su2;
+	char *page1 = (char*)__get_free_page(GFP_NOWAIT);
+	su1 = page1;
+	char *page2 = (char*)get_zeroed_page(GFP_NOWAIT);
+	su2 = page2;
 
 	// for cb->count times
 	for (ping = 0; !cb->count || ping < cb->count; ping++) {
@@ -1504,9 +1517,14 @@ static void krping_test_client(struct krping_cb *cb)
 		// assume we get two length-100 array here
 		c = start;
 		for(i = 0; i < cb->size; i++){
-			printk(KERN_ERR PFX "copying bytes from page to buffer.\n");
-			cb -> start_buf[i] = *su1;
-			++su1;
+			if(i < 4096){
+				cb -> start_buf[i] = *su1;
+				++su1;
+			}
+			else{
+				cb -> start_buf[i] = *su2;
+				++su2;
+			}
 		}
 		
 		/* Put some ascii text in the buffer. */
@@ -1576,7 +1594,8 @@ static void krping_test_client(struct krping_cb *cb)
 		wait_event_interruptible_timeout(cb->sem, cb->state == ERROR, HZ);
 #endif
 	}
-	free_page((unsigned long) page_addr);
+	free_page((unsigned long) page1);
+	free_page((unsigned long) page2);
 }
 
 static void krping_rlat_test_client(struct krping_cb *cb)
@@ -2019,7 +2038,7 @@ int krping_doit(char *cmd)
 
 	cb->server = -1;
 	cb->state = IDLE;
-	cb->size = 4096;
+	cb->size = 4096*2;
 	cb->txdepth = RPING_SQ_DEPTH;
 	init_waitqueue_head(&cb->sem);
 

@@ -2,3 +2,6 @@
 *.cmd
 *.mod
 *.order
+rdma_krping.ko
+Module.symvers
+rdma_krping.mod.c
