@@ -858,7 +858,7 @@ static void krping_test_server(struct krping_cb *cb)
 		printk(KERN_ERR PFX "page comparsion result:%d.\n", cmp_res);
 		if(cmp_res){
 			printk(KERN_ERR PFX "overwrite the rdma_buf:%d.\n",cb->rdma_buf[0]);
-			cb->rdma_buf[0] = 1;
+			cb->rdma_buf[0] = 0;
 			printk(KERN_ERR PFX "overwrite the rdma_buf:%d.\n",cb->rdma_buf[0]);
 		}
 		
