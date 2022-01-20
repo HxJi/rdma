@@ -856,8 +856,10 @@ static void krping_test_server(struct krping_cb *cb)
 				break;
 		}
 		printk(KERN_ERR PFX "page comparsion result:%d.\n", cmp_res);
+		if(cmp_res){
+			cb->rdma_buf[0] = 1;
+		}
 		
-		cb->rdma_buf[0] = 0;
 
 		/* Tell client to continue */
 		if (cb->server && cb->server_invalidate) {
@@ -1504,7 +1506,7 @@ static void krping_test_client(struct krping_cb *cb)
 	start = 65;
 	// create a user space page and return its address
 	unsigned char *su1, *su2;
-	char *page1 = (char*)__get_free_page(GFP_NOWAIT);
+	char *page1 = (char*)get_zeroed_page(GFP_NOWAIT);
 	su1 = page1;
 	char *page2 = (char*)get_zeroed_page(GFP_NOWAIT);
 	su2 = page2;
@@ -1525,6 +1527,12 @@ static void krping_test_client(struct krping_cb *cb)
 				cb -> start_buf[i] = *su2;
 				++su2;
 			}
+		}
+		
+		c = start;
+		for(i = 0; i < 10; i++){
+			cb -> start_buf[i] = c;
+			c++;
 		}
 		
 		/* Put some ascii text in the buffer. */
@@ -1587,9 +1595,13 @@ static void krping_test_client(struct krping_cb *cb)
 			}
 		}
 			
-		if (cb->verbose)
+		if (cb->verbose){
 			printk(KERN_INFO PFX "client ping data (64B max): |%.64s|\n",
 				cb->rdma_buf);
+			printk(KERN_INFO PFX "client ping data (4096B*2 max): |%d|\n",
+				cb->rdma_buf);
+		}
+			
 #ifdef SLOW_KRPING
 		wait_event_interruptible_timeout(cb->sem, cb->state == ERROR, HZ);
 #endif
