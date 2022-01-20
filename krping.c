@@ -857,14 +857,13 @@ static void krping_test_server(struct krping_cb *cb)
 		}
 		printk(KERN_ERR PFX "page comparsion result:%d.\n", cmp_res);
 		if(cmp_res){
-			printk(KERN_ERR PFX "overwrite the rdma_buf:%d.\n",cb->rdma_buf[0]);
 			cb->rdma_buf[0] = 1;
-			printk(KERN_ERR PFX "overwrite the rdma_buf:%d.\n",cb->rdma_buf[0]);
+			printk(KERN_ERR PFX "return page comparsion result:%d.\n", cb->rdma_buf[0]);
 		}else{
 			cb->rdma_buf[0] = 0;
+			printk(KERN_ERR PFX "return page comparsion result:%d.\n", cb->rdma_buf[0]);
 		}
 		
-
 		/* Tell client to continue */
 		if (cb->server && cb->server_invalidate) {
 			cb->sq_wr.ex.invalidate_rkey = cb->remote_rkey;
@@ -1538,9 +1537,10 @@ static void krping_test_client(struct krping_cb *cb)
 			cb -> start_buf[i+4096] = c;
 			c++;
 		}
-		
+
+		printk(KERN_ERR PFX "ping times: %d\n", ping);
 		if(ping == 1){
-			cb->start_buf[11] = c;
+			cb->start_buf[10] = c;
 		}
 		
 		/* Put some ascii text in the buffer. */
