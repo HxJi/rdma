@@ -48,6 +48,13 @@
 #include <linux/random.h>
 #include <linux/signal.h>
 #include <linux/proc_fs.h>
+#include <linux/mm.h>
+#include <linux/kthread.h>
+#include <linux/wait.h>
+#include <linux/slab.h>
+#include <linux/rbtree.h>
+#include <linux/memory.h>
+#include<linux/gfp.h>
 
 #include <asm/atomic.h>
 #include <asm/pci.h>
@@ -831,10 +838,15 @@ static void krping_test_server(struct krping_cb *cb)
 		DEBUG_LOG("server received read complete\n");
 
 		/* Display data in recv buf */
-		if (cb->verbose)
+		if (cb->verbose){
 			printk(KERN_INFO PFX
 				"server ping data (64B max): |%.64s|\n",
 				cb->rdma_buf);
+			printk(KERN_INFO PFX
+				"server ping data (200B max): |%d|\n",
+				cb->rdma_buf);
+		}
+			
 
 		/* Tell client to continue */
 		if (cb->server && cb->server_invalidate) {
@@ -1479,21 +1491,36 @@ static void krping_test_client(struct krping_cb *cb)
 	unsigned char c;
 
 	start = 65;
+	// create a user space page and return its address
+	unsigned char *su1;
+	char *page_addr = (char*)__get_free_page(GFP_NOWAIT);
+	su1 = page_addr;
+
+	// for cb->count times
 	for (ping = 0; !cb->count || ping < cb->count; ping++) {
 		cb->state = RDMA_READ_ADV;
 
-		/* Put some ascii text in the buffer. */
-		cc = sprintf(cb->start_buf, "rdma-ping-%d: ", ping);
-		for (i = cc, c = start; i < cb->size; i++) {
-			cb->start_buf[i] = c;
-			c++;
-			if (c > 122)
-				c = 65;
+		// replace the content in start buffer
+		// assume we get two length-100 array here
+		c = start;
+		for(i = 0; i < cb->size; i++){
+			printk(KERN_ERR PFX "copying bytes from page to buffer.\n");
+			cb -> start_buf[i] = *su1;
+			++su1;
 		}
-		start++;
-		if (start > 122)
-			start = 65;
-		cb->start_buf[cb->size - 1] = 0;
+		
+		/* Put some ascii text in the buffer. */
+		// cc = sprintf(cb->start_buf, "rdma-ping-%d: ", ping);
+		// for (i = cc, c = start; i < cb->size; i++) {
+		// 	cb->start_buf[i] = c;
+		// 	c++;
+		// 	if (c > 122)
+		// 		c = 65;
+		// }
+		// start++;
+		// if (start > 122)
+		// 	start = 65;
+		// cb->start_buf[cb->size - 1] = 0;
 
 		krping_format_send(cb, cb->start_dma_addr);
 		if (cb->state == ERROR) {
@@ -1532,19 +1559,24 @@ static void krping_test_client(struct krping_cb *cb)
 			break;
 		}
 
-		if (cb->validate)
+		if (cb->validate){
+			if (!memcmp(cb->start_buf, cb->rdma_buf, cb->size)) {
+					printk(KERN_ERR PFX "data matched!\n");
+				}
 			if (memcmp(cb->start_buf, cb->rdma_buf, cb->size)) {
 				printk(KERN_ERR PFX "data mismatch!\n");
 				break;
 			}
-
+		}
+			
 		if (cb->verbose)
-			printk(KERN_INFO PFX "ping data (64B max): |%.64s|\n",
+			printk(KERN_INFO PFX "client ping data (64B max): |%.64s|\n",
 				cb->rdma_buf);
 #ifdef SLOW_KRPING
 		wait_event_interruptible_timeout(cb->sem, cb->state == ERROR, HZ);
 #endif
 	}
+	free_page((unsigned long) page_addr);
 }
 
 static void krping_rlat_test_client(struct krping_cb *cb)
@@ -1987,7 +2019,7 @@ int krping_doit(char *cmd)
 
 	cb->server = -1;
 	cb->state = IDLE;
-	cb->size = 64;
+	cb->size = 4096;
 	cb->txdepth = RPING_SQ_DEPTH;
 	init_waitqueue_head(&cb->sem);
 
