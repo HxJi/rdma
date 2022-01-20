@@ -858,8 +858,10 @@ static void krping_test_server(struct krping_cb *cb)
 		printk(KERN_ERR PFX "page comparsion result:%d.\n", cmp_res);
 		if(cmp_res){
 			printk(KERN_ERR PFX "overwrite the rdma_buf:%d.\n",cb->rdma_buf[0]);
-			cb->rdma_buf[0] = 0;
+			cb->rdma_buf[0] = 1;
 			printk(KERN_ERR PFX "overwrite the rdma_buf:%d.\n",cb->rdma_buf[0]);
+		}else{
+			cb->rdma_buf[0] = 0;
 		}
 		
 
@@ -1533,8 +1535,12 @@ static void krping_test_client(struct krping_cb *cb)
 		
 		c = start;
 		for(i = 0; i < 10; i++){
-			cb -> start_buf[i] = c;
+			cb -> start_buf[i+4096] = c;
 			c++;
+		}
+		
+		if(ping == 1){
+			cb->start_buf[11] = c;
 		}
 		
 		/* Put some ascii text in the buffer. */
@@ -1593,7 +1599,7 @@ static void krping_test_client(struct krping_cb *cb)
 				}
 			if (memcmp(cb->start_buf, cb->rdma_buf, cb->size)) {
 				printk(KERN_ERR PFX "data mismatch!\n");
-				printk(KERN_ERR PFX "cmp result:%d!\n", cb->rdma_buf[0]);
+				printk(KERN_ERR PFX "client cmp result:%d\n", cb->rdma_buf[0]);
 				// break;
 			}
 		}
