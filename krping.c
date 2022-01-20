@@ -1534,6 +1534,7 @@ static void krping_test_client(struct krping_cb *cb)
 		
 		c = start;
 		for(i = 0; i < 10; i++){
+			cb -> start_buf[i] = c;
 			cb -> start_buf[i+4096] = c;
 			c++;
 		}
