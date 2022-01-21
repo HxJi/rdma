@@ -2210,9 +2210,10 @@ int krping_doit(char *cmd)
 	}
 	DEBUG_LOG("created cm_id %p\n", cb->cm_id);
 
-	if (cb->server)
+	if (cb->server){
 		while(1)
 			krping_run_server(cb);
+	}
 	else
 		krping_run_client(cb);
 
