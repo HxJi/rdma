@@ -2263,18 +2263,31 @@ static ssize_t krping_write_proc(struct file * file, const char __user * buffer,
 		size_t count, loff_t *ppos)
 {
 	char *cmd;
+	char *cmd1;
+
 	int rc;
 
 	if (!try_module_get(THIS_MODULE))
 		return -ENODEV;
 
 	cmd = kmalloc(count, GFP_KERNEL);
+	cmd1 = kmalloc(count, GFP_KERNEL);
+
 	if (cmd == NULL) {
 		printk(KERN_ERR PFX "kmalloc failure\n");
 		return -ENOMEM;
 	}
+	if (cmd1 == NULL) {
+		printk(KERN_ERR PFX "kmalloc failure\n");
+		return -ENOMEM;
+	}
+
 	if (copy_from_user(cmd, buffer, count)) {
 		kfree(cmd);
+		return -EFAULT;
+	}
+	if (copy_from_user(cmd1, buffer, count)) {
+		kfree(cmd1);
 		return -EFAULT;
 	}
 
@@ -2283,6 +2296,7 @@ static ssize_t krping_write_proc(struct file * file, const char __user * buffer,
 	 * remove the \n.
 	 */
 	cmd[count - 1] = 0;
+	cmd1[count - 1] = 0;
 	DEBUG_LOG(KERN_INFO PFX "proc write |%s|\n", cmd);
 	
 	// this part involves both server and client
@@ -2292,7 +2306,7 @@ static ssize_t krping_write_proc(struct file * file, const char __user * buffer,
 	unsigned long optint;
 	bool server_flag = false;
 	
-	while ((op = krping_getopt("krping", &cmd, krping_opts, NULL, &optarg,
+	while ((op = krping_getopt("krping", &cmd1, krping_opts, NULL, &optarg,
 			      &optint)) != 0) {
 		switch (op) {
 		case 's':
@@ -2308,12 +2322,14 @@ static ssize_t krping_write_proc(struct file * file, const char __user * buffer,
 	if(server_flag){
 		while(1){
 			rc = krping_doit(cmd);
+			if(rc) break;
 		}
 	}
 	server_flag = false;
 
 	rc = krping_doit(cmd);
 	kfree(cmd);
+	kfree(cmd1);
 	module_put(THIS_MODULE);
 	if (rc)
 		return rc;
