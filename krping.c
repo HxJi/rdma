@@ -2301,31 +2301,31 @@ static ssize_t krping_write_proc(struct file * file, const char __user * buffer,
 	
 	// this part involves both server and client
 	// clarify the two parts at here
-	int op;
-	char *optarg;
-	unsigned long optint;
-	bool server_flag = false;
+	// int op;
+	// char *optarg;
+	// unsigned long optint;
+	// bool server_flag = false;
 	
-	while ((op = krping_getopt("krping", &cmd1, krping_opts, NULL, &optarg,
-			      &optint)) != 0) {
-		switch (op) {
-		case 's':
-			server_flag = true;
-			DEBUG_LOG("server\n");
-			break;
-		default:
-			printk(KERN_ERR PFX "skip opt %s\n", optarg);
-			break;
-		}
-	}
+	// while ((op = krping_getopt("krping", &cmd1, krping_opts, NULL, &optarg,
+	// 		      &optint)) != 0) {
+	// 	switch (op) {
+	// 	case 's':
+	// 		server_flag = true;
+	// 		DEBUG_LOG("server\n");
+	// 		break;
+	// 	default:
+	// 		printk(KERN_ERR PFX "skip opt %s\n", optarg);
+	// 		break;
+	// 	}
+	// }
 
-	if(server_flag){
-		while(1){
-			rc = krping_doit(cmd);
-			if(rc) break;
-		}
-	}
-	server_flag = false;
+	// if(server_flag){
+	// 	while(1){
+	// 		rc = krping_doit(cmd);
+	// 		if(rc) break;
+	// 	}
+	// }
+	// server_flag = false;
 
 	rc = krping_doit(cmd);
 	kfree(cmd);
