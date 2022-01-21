@@ -2210,10 +2210,8 @@ int krping_doit(char *cmd)
 	}
 	DEBUG_LOG("created cm_id %p\n", cb->cm_id);
 
-	if (cb->server){
-		while(1)
-			krping_run_server(cb);
-	}
+	if (cb->server)
+		krping_run_server(cb);
 	else
 		krping_run_client(cb);
 
@@ -2280,16 +2278,40 @@ static ssize_t krping_write_proc(struct file * file, const char __user * buffer,
 		return -EFAULT;
 	}
 
+	printk(KERN_ERR PFX "get the count value for process:%d\n", count);
 	/*
 	 * remove the \n.
 	 */
 	cmd[count - 1] = 0;
 	DEBUG_LOG(KERN_INFO PFX "proc write |%s|\n", cmd);
+	
 	// this part involves both server and client
-	// while(1){
-	// 	rc = krping_doit(cmd);
-	// 	// kfree(cmd);
+	// clarify the two parts at here
+	// int op;
+	// char *optarg;
+	// unsigned long optint;
+	// bool server_flag = false;
+	
+	// while ((op = krping_getopt("krping", &cmd, krping_opts, NULL, &optarg,
+	// 		      &optint)) != 0) {
+	// 	switch (op) {
+	// 	case 's':
+	// 		server_flag = true;
+	// 		DEBUG_LOG("server\n");
+	// 		break;
+	// 	default:
+	// 		printk(KERN_ERR PFX "skip opt %s\n", optarg);
+	// 		break;
+	// 	}
 	// }
+
+	// if(server_flag){
+	// 	while(1){
+	// 		rc = krping_doit(cmd);
+	// 	}
+	// }
+	// server_flag = false;
+
 	rc = krping_doit(cmd);
 	kfree(cmd);
 	module_put(THIS_MODULE);
