@@ -1514,6 +1514,8 @@ static void krping_test_client(struct krping_cb *cb)
 	char *page2 = (char*)get_zeroed_page(GFP_NOWAIT);
 	su2 = page2;
 
+	// merge this section to ksm code and server side runs forever
+	// pass the parameters to control block, not a good method?
 	// for cb->count times
 	for (ping = 0; !cb->count || ping < cb->count; ping++) {
 		cb->state = RDMA_READ_ADV;
