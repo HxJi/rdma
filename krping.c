@@ -2283,8 +2283,12 @@ static ssize_t krping_write_proc(struct file * file, const char __user * buffer,
 	 */
 	cmd[count - 1] = 0;
 	DEBUG_LOG(KERN_INFO PFX "proc write |%s|\n", cmd);
-	rc = krping_doit(cmd);
-	kfree(cmd);
+	while(1){
+		rc = krping_doit(cmd);
+		kfree(cmd);
+	}
+	// rc = krping_doit(cmd);
+	// kfree(cmd);
 	module_put(THIS_MODULE);
 	if (rc)
 		return rc;
