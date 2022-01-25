@@ -1479,72 +1479,72 @@ static void krping_test_client(struct krping_cb *cb)
 	unsigned char c;
 
 	start = 65;
-	for (ping = 0; !cb->count || ping < cb->count; ping++) {
-		cb->state = RDMA_READ_ADV;
+	// for (ping = 0; !cb->count || ping < cb->count; ping++) {
+  cb->state = RDMA_READ_ADV;
 
-		/* Put some ascii text in the buffer. */
-		cc = sprintf(cb->start_buf, "rdma-ping-%d: ", ping);
-		for (i = cc, c = start; i < cb->size; i++) {
-			cb->start_buf[i] = c;
-			c++;
-			if (c > 122)
-				c = 65;
-		}
-		start++;
-		if (start > 122)
-			start = 65;
-		cb->start_buf[cb->size - 1] = 0;
+  /* Put some ascii text in the buffer. */
+  cc = sprintf(cb->start_buf, "rdma-ping-%d: ", ping);
+  for (i = cc, c = start; i < cb->size; i++) {
+    cb->start_buf[i] = c;
+    c++;
+    if (c > 122)
+      c = 65;
+  }
+  start++;
+  if (start > 122)
+    start = 65;
+  cb->start_buf[cb->size - 1] = 0;
 
-		krping_format_send(cb, cb->start_dma_addr);
-		if (cb->state == ERROR) {
-			printk(KERN_ERR PFX "krping_format_send failed\n");
-			break;
-		}
-		ret = ib_post_send(cb->qp, &cb->sq_wr, &bad_wr);
-		if (ret) {
-			printk(KERN_ERR PFX "post send error %d\n", ret);
-			break;
-		}
+  krping_format_send(cb, cb->start_dma_addr);
+  if (cb->state == ERROR) {
+    printk(KERN_ERR PFX "krping_format_send failed\n");
+    break;
+  }
+  ret = ib_post_send(cb->qp, &cb->sq_wr, &bad_wr);
+  if (ret) {
+    printk(KERN_ERR PFX "post send error %d\n", ret);
+    break;
+  }
 
-		/* Wait for server to ACK */
-		wait_event_interruptible(cb->sem, cb->state >= RDMA_WRITE_ADV);
-		if (cb->state != RDMA_WRITE_ADV) {
-			printk(KERN_ERR PFX 
-			       "wait for RDMA_WRITE_ADV state %d\n",
-			       cb->state);
-			break;
-		}
+  /* Wait for server to ACK */
+  wait_event_interruptible(cb->sem, cb->state >= RDMA_WRITE_ADV);
+  if (cb->state != RDMA_WRITE_ADV) {
+    printk(KERN_ERR PFX 
+            "wait for RDMA_WRITE_ADV state %d\n",
+            cb->state);
+    break;
+  }
 
-		krping_format_send(cb, cb->rdma_dma_addr);
-		ret = ib_post_send(cb->qp, &cb->sq_wr, &bad_wr);
-		if (ret) {
-			printk(KERN_ERR PFX "post send error %d\n", ret);
-			break;
-		}
+  krping_format_send(cb, cb->rdma_dma_addr);
+  ret = ib_post_send(cb->qp, &cb->sq_wr, &bad_wr);
+  if (ret) {
+    printk(KERN_ERR PFX "post send error %d\n", ret);
+    break;
+  }
 
-		/* Wait for the server to say the RDMA Write is complete. */
-		wait_event_interruptible(cb->sem, 
-					 cb->state >= RDMA_WRITE_COMPLETE);
-		if (cb->state != RDMA_WRITE_COMPLETE) {
-			printk(KERN_ERR PFX 
-			       "wait for RDMA_WRITE_COMPLETE state %d\n",
-			       cb->state);
-			break;
-		}
+  /* Wait for the server to say the RDMA Write is complete. */
+  wait_event_interruptible(cb->sem, 
+          cb->state >= RDMA_WRITE_COMPLETE);
+  if (cb->state != RDMA_WRITE_COMPLETE) {
+    printk(KERN_ERR PFX 
+            "wait for RDMA_WRITE_COMPLETE state %d\n",
+            cb->state);
+    break;
+  }
 
-		if (cb->validate)
-			if (memcmp(cb->start_buf, cb->rdma_buf, cb->size)) {
-				printk(KERN_ERR PFX "data mismatch!\n");
-				break;
-			}
+  if (cb->validate)
+    if (memcmp(cb->start_buf, cb->rdma_buf, cb->size)) {
+      printk(KERN_ERR PFX "data mismatch!\n");
+      break;
+    }
 
-		if (cb->verbose)
-			printk(KERN_INFO PFX "ping data (64B max): |%.64s|\n",
-				cb->rdma_buf);
+  if (cb->verbose)
+    printk(KERN_INFO PFX "ping data (64B max): |%.64s|\n",
+      cb->rdma_buf);
 #ifdef SLOW_KRPING
 		wait_event_interruptible_timeout(cb->sem, cb->state == ERROR, HZ);
 #endif
-	}
+	// }
 }
 
 static void krping_rlat_test_client(struct krping_cb *cb)
@@ -1961,6 +1961,16 @@ static void krping_run_client(struct krping_cb *cb)
 		krping_fr_test(cb);
 	else
 		krping_test_client(cb);
+  
+  // wait for some users' inputs and decide test client or not
+  
+  int control = cb->count;
+  while(control > 0){
+    // how to get user input from kernel space
+    krping_test_client(cb);
+  }
+  printk(KERN_ERR PFX "rdma disconnect.\n");
+
 	rdma_disconnect(cb->cm_id);
 err2:
 	krping_free_buffers(cb);
