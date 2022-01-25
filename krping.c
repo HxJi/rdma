@@ -775,6 +775,7 @@ static void krping_test_server(struct krping_cb *cb)
 	struct ib_send_wr inv;
 	const struct ib_send_wr *bad_wr;
 	int ret;
+  DEBUG_LOG("enter krping test server function\n");
 
 	while (1) {
 		/* Wait for client's Start STAG/TO/Len */
