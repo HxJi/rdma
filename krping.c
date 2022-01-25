@@ -1551,7 +1551,7 @@ static int krping_test_client(struct krping_cb *cb)
 		wait_event_interruptible_timeout(cb->sem, cb->state == ERROR, HZ);
 #endif
 
-  return 0
+  return 0;
 	// }
 }
 
@@ -1976,7 +1976,7 @@ static void krping_run_client(struct krping_cb *cb)
   while(control > 0 && ret == 0){
     // how to get user input from kernel space
     ret = krping_test_client(cb);
-    count = count - 1;
+    control = control - 1;
   }
   printk(KERN_ERR PFX "rdma disconnect.\n");
 
