@@ -1472,7 +1472,7 @@ err0:
 	rdma_destroy_id(cb->child_cm_id);
 }
 
-static void krping_test_client(struct krping_cb *cb)
+static int krping_test_client(struct krping_cb *cb)
 {
 	int ping, start, cc, i, ret;
 	const struct ib_send_wr *bad_wr;
@@ -1498,12 +1498,14 @@ static void krping_test_client(struct krping_cb *cb)
   krping_format_send(cb, cb->start_dma_addr);
   if (cb->state == ERROR) {
     printk(KERN_ERR PFX "krping_format_send failed\n");
-    break;
+    // break;
+    return ERROR;
   }
   ret = ib_post_send(cb->qp, &cb->sq_wr, &bad_wr);
   if (ret) {
     printk(KERN_ERR PFX "post send error %d\n", ret);
-    break;
+    // break;
+    return ret;
   }
 
   /* Wait for server to ACK */
@@ -1512,14 +1514,16 @@ static void krping_test_client(struct krping_cb *cb)
     printk(KERN_ERR PFX 
             "wait for RDMA_WRITE_ADV state %d\n",
             cb->state);
-    break;
+    // break;
+    return -1;
   }
 
   krping_format_send(cb, cb->rdma_dma_addr);
   ret = ib_post_send(cb->qp, &cb->sq_wr, &bad_wr);
   if (ret) {
     printk(KERN_ERR PFX "post send error %d\n", ret);
-    break;
+    // break;
+    return -1;
   }
 
   /* Wait for the server to say the RDMA Write is complete. */
@@ -1529,13 +1533,15 @@ static void krping_test_client(struct krping_cb *cb)
     printk(KERN_ERR PFX 
             "wait for RDMA_WRITE_COMPLETE state %d\n",
             cb->state);
-    break;
+    // break;
+    return -1;
   }
 
   if (cb->validate)
     if (memcmp(cb->start_buf, cb->rdma_buf, cb->size)) {
       printk(KERN_ERR PFX "data mismatch!\n");
-      break;
+      // break;
+      return -1;
     }
 
   if (cb->verbose)
@@ -1544,6 +1550,8 @@ static void krping_test_client(struct krping_cb *cb)
 #ifdef SLOW_KRPING
 		wait_event_interruptible_timeout(cb->sem, cb->state == ERROR, HZ);
 #endif
+
+  return 0
 	// }
 }
 
@@ -1960,14 +1968,15 @@ static void krping_run_client(struct krping_cb *cb)
 	else if (cb->frtest)
 		krping_fr_test(cb);
 	else
-		krping_test_client(cb);
+		ret = krping_test_client(cb);
   
   // wait for some users' inputs and decide test client or not
   
   int control = cb->count;
-  while(control > 0){
+  while(control > 0 && ret == 0){
     // how to get user input from kernel space
-    krping_test_client(cb);
+    ret = krping_test_client(cb);
+    count = count - 1;
   }
   printk(KERN_ERR PFX "rdma disconnect.\n");
 
