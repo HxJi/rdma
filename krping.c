@@ -1481,7 +1481,7 @@ static int krping_test_client(struct krping_cb *cb)
 	start = 65;
 	// for (ping = 0; !cb->count || ping < cb->count; ping++) {
   cb->state = RDMA_READ_ADV;
-
+  ping = 1;
   /* Put some ascii text in the buffer. */
   cc = sprintf(cb->start_buf, "rdma-ping-%d: ", ping);
   for (i = cc, c = start; i < cb->size; i++) {
@@ -1499,7 +1499,7 @@ static int krping_test_client(struct krping_cb *cb)
   if (cb->state == ERROR) {
     printk(KERN_ERR PFX "krping_format_send failed\n");
     // break;
-    return ERROR;
+    return -1;
   }
   ret = ib_post_send(cb->qp, &cb->sq_wr, &bad_wr);
   if (ret) {
@@ -1973,6 +1973,7 @@ static void krping_run_client(struct krping_cb *cb)
   // wait for some users' inputs and decide test client or not
   
   int control = cb->count;
+  printk(KERN_ERR PFX "rdma control number:%d.\n", control);
   while(control > 0 && ret == 0){
     // how to get user input from kernel space
     ret = krping_test_client(cb);
