@@ -1430,7 +1430,7 @@ static int krping_run_server(struct krping_cb *cb)
 
 	ret = krping_bind_server(cb);
 	if (ret)
-		return;
+		return -1;
 
 	ret = krping_setup_qp(cb, cb->child_cm_id);
 	if (ret) {
@@ -1940,12 +1940,12 @@ static int krping_run_client(struct krping_cb *cb)
 
 	ret = krping_bind_client(cb);
 	if (ret)
-		return;
+		return -1;
 
 	ret = krping_setup_qp(cb, cb->cm_id);
 	if (ret) {
 		printk(KERN_ERR PFX "setup_qp failed: %d\n", ret);
-		return;
+		return -2;
 	}
 
 	ret = krping_setup_buffers(cb);
