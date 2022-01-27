@@ -1426,7 +1426,7 @@ static int krping_bind_server(struct krping_cb *cb)
 static int krping_run_server(struct krping_cb *cb)
 {
 	const struct ib_recv_wr *bad_wr;
-	int ret;
+	int ret = -1;
 
 	ret = krping_bind_server(cb);
 	if (ret)
@@ -1477,7 +1477,7 @@ err0:
   pr_info("server exit through err0");
 	rdma_destroy_id(cb->child_cm_id);
 
-  return 0;
+  return -1;
 }
 
 static int krping_test_client(struct krping_cb *cb)
@@ -1934,7 +1934,7 @@ static int krping_bind_client(struct krping_cb *cb)
 static int krping_run_client(struct krping_cb *cb)
 {
 	const struct ib_recv_wr *bad_wr;
-	int ret;
+	int ret = -1;
 
 	/* set type of service, if any */
 	if (cb->tos != 0)
@@ -1992,11 +1992,12 @@ static int krping_run_client(struct krping_cb *cb)
 err2:
   pr_info("client exit through err2");
 	krping_free_buffers(cb);
+
 err1:
   pr_info("client exit through err1");
 	krping_free_qp(cb);
 
-  return 0;
+  return -1;
 }
 
 int krping_doit(char *cmd)
@@ -2172,20 +2173,20 @@ int krping_doit(char *cmd)
     ret = krping_run_server(cb);
     if(ret == 0){
       pr_info("krping_run_server done.\n");
+      rdma_disconnect(cb->child_cm_id);
+      krping_free_buffers(cb);
+      krping_free_qp(cb);
+      rdma_destroy_id(cb->child_cm_id);
     }
-    rdma_disconnect(cb->child_cm_id);
-    krping_free_buffers(cb);
-    krping_free_qp(cb);
-    rdma_destroy_id(cb->child_cm_id);
   }
 	else{
     ret = krping_run_client(cb);
     if(ret == 0){
       pr_info("krping_run_client done.\n");
+      rdma_disconnect(cb->cm_id);
+      krping_free_buffers(cb);
+      krping_free_qp(cb);
     }
-    rdma_disconnect(cb->cm_id);
-	  krping_free_buffers(cb);
-	  krping_free_qp(cb);
   }
 	DEBUG_LOG("destroy cm_id %p\n", cb->cm_id);
 	rdma_destroy_id(cb->cm_id);
