@@ -2169,6 +2169,7 @@ int krping_doit(char *cmd)
 
   // lift the rdma disconnect function out of run_server/client function
   // rdma_disconnect failed due to null pointer in server side
+  // goto statement !!!!
 	if (cb->server){
     ret = krping_run_server(cb);
     pr_info("run additional test server.\n");
