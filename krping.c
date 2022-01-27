@@ -780,6 +780,7 @@ static void krping_test_server(struct krping_cb *cb)
 		/* Wait for client's Start STAG/TO/Len */
 		wait_event_interruptible(cb->sem, cb->state >= RDMA_READ_ADV);
 		if (cb->state != RDMA_READ_ADV) {
+      // disconnect and break from here
 			printk(KERN_ERR PFX "wait for RDMA_READ_ADV state %d\n",
 				cb->state);
 			break;
@@ -1463,12 +1464,15 @@ static void krping_run_server(struct krping_cb *cb)
 		krping_bw_test_server(cb);
 	else
 		krping_test_server(cb);
-	
+	// rdma_disconnect(cb->child_cm_id);
 err2:
+  pr_info("server exit through err2");
 	krping_free_buffers(cb);
 err1:
+  pr_info("server exit through err1");
 	krping_free_qp(cb);
 err0:
+  pr_info("server exit through err0");
 	rdma_destroy_id(cb->child_cm_id);
 }
 
@@ -1978,10 +1982,13 @@ static void krping_run_client(struct krping_cb *cb)
     ret = krping_test_client(cb);
     pr_info("krping_test_client result:%d", ret);
   }
+  // rdma_disconnect(cb->cm_id);
 
 err2:
+  pr_info("client exit through err2");
 	krping_free_buffers(cb);
 err1:
+  pr_info("client exit through err1");
 	krping_free_qp(cb);
 }
 
@@ -2155,10 +2162,12 @@ int krping_doit(char *cmd)
   // lift the rdma disconnect function out of run_server/client function
 	if (cb->server){
     krping_run_server(cb);
+    krping_test_server(cb);
     rdma_disconnect(cb->child_cm_id);
   }
 	else{
     krping_run_client(cb);
+    krping_test_client(cb);
     rdma_disconnect(cb->cm_id);
   }
 	DEBUG_LOG("destroy cm_id %p\n", cb->cm_id);
