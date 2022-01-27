@@ -1472,7 +1472,7 @@ err0:
 	rdma_destroy_id(cb->child_cm_id);
 }
 
-static void krping_test_client(struct krping_cb *cb)
+static int krping_test_client(struct krping_cb *cb)
 {
 	int ping, start, cc, i, ret;
 	const struct ib_send_wr *bad_wr;
@@ -1498,12 +1498,14 @@ static void krping_test_client(struct krping_cb *cb)
   krping_format_send(cb, cb->start_dma_addr);
   if (cb->state == ERROR) {
     printk(KERN_ERR PFX "krping_format_send failed\n");
-    break;
+    return -1;
+    // break;
   }
   ret = ib_post_send(cb->qp, &cb->sq_wr, &bad_wr);
   if (ret) {
     printk(KERN_ERR PFX "post send error %d\n", ret);
-    break;
+    return -2;
+    // break;
   }
 
   /* Wait for server to ACK */
@@ -1512,14 +1514,16 @@ static void krping_test_client(struct krping_cb *cb)
     printk(KERN_ERR PFX 
             "wait for RDMA_WRITE_ADV state %d\n",
             cb->state);
-    break;
+    return -3;
+    // break;
   }
 
   krping_format_send(cb, cb->rdma_dma_addr);
   ret = ib_post_send(cb->qp, &cb->sq_wr, &bad_wr);
   if (ret) {
     printk(KERN_ERR PFX "post send error %d\n", ret);
-    break;
+    return -4;
+    // break;
   }
 
   /* Wait for the server to say the RDMA Write is complete. */
@@ -1529,18 +1533,23 @@ static void krping_test_client(struct krping_cb *cb)
     printk(KERN_ERR PFX 
             "wait for RDMA_WRITE_COMPLETE state %d\n",
             cb->state);
-    break;
+    return -5;
+    // break;
   }
 
   if (cb->validate)
     if (memcmp(cb->start_buf, cb->rdma_buf, cb->size)) {
       printk(KERN_ERR PFX "data mismatch!\n");
-      break;
+      return -6;
+      // break;
     }
 
   if (cb->verbose)
     printk(KERN_INFO PFX "ping data (64B max): |%.64s|\n",
       cb->rdma_buf);
+  
+  return 0;
+
 #ifdef SLOW_KRPING
 		wait_event_interruptible_timeout(cb->sem, cb->state == ERROR, HZ);
 #endif
@@ -1966,7 +1975,8 @@ static void krping_run_client(struct krping_cb *cb)
   // extract the loop on client side to this function
   int i = 0;
   for(i = 0; i < cb->count; i++){
-    krping_test_client(cb);
+    ret = krping_test_client(cb);
+    pr_info("krping_test_client result:%d", ret);
   }
 
 	rdma_disconnect(cb->cm_id);
