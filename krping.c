@@ -1476,6 +1476,8 @@ err1:
 err0:
   pr_info("server exit through err0");
 	rdma_destroy_id(cb->child_cm_id);
+
+  return 0;
 }
 
 static int krping_test_client(struct krping_cb *cb)
@@ -1993,6 +1995,8 @@ err2:
 err1:
   pr_info("client exit through err1");
 	krping_free_qp(cb);
+
+  return 0;
 }
 
 int krping_doit(char *cmd)
