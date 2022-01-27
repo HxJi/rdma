@@ -1464,7 +1464,7 @@ static void krping_run_server(struct krping_cb *cb)
 		krping_bw_test_server(cb);
 	else
 		krping_test_server(cb);
-	// rdma_disconnect(cb->child_cm_id);
+	rdma_disconnect(cb->child_cm_id);
 err2:
   pr_info("server exit through err2");
 	krping_free_buffers(cb);
@@ -1982,7 +1982,7 @@ static void krping_run_client(struct krping_cb *cb)
     ret = krping_test_client(cb);
     pr_info("krping_test_client result:%d", ret);
   }
-  // rdma_disconnect(cb->cm_id);
+  rdma_disconnect(cb->cm_id);
 
 err2:
   pr_info("client exit through err2");
@@ -2160,15 +2160,14 @@ int krping_doit(char *cmd)
 	DEBUG_LOG("created cm_id %p\n", cb->cm_id);
 
   // lift the rdma disconnect function out of run_server/client function
+  // rdma_disconnect failed due to null pointer in server side
 	if (cb->server){
     krping_run_server(cb);
-    krping_test_server(cb);
-    rdma_disconnect(cb->child_cm_id);
+    // rdma_disconnect(cb->child_cm_id);
   }
 	else{
     krping_run_client(cb);
-    krping_test_client(cb);
-    rdma_disconnect(cb->cm_id);
+    // rdma_disconnect(cb->cm_id);
   }
 	DEBUG_LOG("destroy cm_id %p\n", cb->cm_id);
 	rdma_destroy_id(cb->cm_id);
