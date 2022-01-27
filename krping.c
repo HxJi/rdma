@@ -2171,6 +2171,9 @@ int krping_doit(char *cmd)
   // rdma_disconnect failed due to null pointer in server side
 	if (cb->server){
     ret = krping_run_server(cb);
+    pr_info("run additional test server.\n");
+    ret = krping_test_server(cb);
+    pr_info("finish additional test server.\n");
     if(ret == 0){
       pr_info("krping_run_server done.\n");
       rdma_disconnect(cb->child_cm_id);
@@ -2181,6 +2184,9 @@ int krping_doit(char *cmd)
   }
 	else{
     ret = krping_run_client(cb);
+    pr_info("run additional test client.\n");
+    ret = krping_test_client(cb);
+    pr_info("finish additional test client.\n");
     if(ret == 0){
       pr_info("krping_run_client done.\n");
       rdma_disconnect(cb->cm_id);
