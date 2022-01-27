@@ -2172,7 +2172,7 @@ int krping_doit(char *cmd)
 	if (cb->server){
     ret = krping_run_server(cb);
     pr_info("run additional test server.\n");
-    ret = krping_test_server(cb);
+    // krping_test_server(cb);
     pr_info("finish additional test server.\n");
     if(ret == 0){
       pr_info("krping_run_server done.\n");
