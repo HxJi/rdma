@@ -837,6 +837,22 @@ static void krping_test_server(struct krping_cb *cb)
 				"server ping data (64B max): |%.64s|\n",
 				cb->rdma_buf);
 
+		// [hj14] after server recieved the data
+		int i, page_size, cmp_res;
+		page_size = cb->size/2;
+		for(i = 0; i < page_size; i++){
+			if ((cmp_res = cb->rdma_buf[i] - cb->rdma_buf[i+page_size]) != 0)
+				break;
+		}
+		if(cmp_res != 0){
+			pr_info("compare result:%d.\n", cmp_res);
+			cb->rdma_buf[0] = 1;
+		}
+		else{
+			pr_info("compare result:%d.\n", cmp_res);
+			cb->rdma_buf[0] = 0;
+		}
+
 		/* Tell client to continue */
 		if (cb->server && cb->server_invalidate) {
 			cb->sq_wr.ex.invalidate_rkey = cb->remote_rkey;
@@ -1456,13 +1472,6 @@ static int krping_run_server(struct krping_cb *cb)
 		goto err2;
 	}
 
-	// if (cb->wlat)
-	// 	krping_wlat_test_server(cb);
-	// else if (cb->rlat)
-	// 	krping_rlat_test_server(cb);
-	// else if (cb->bw)
-	// 	krping_bw_test_server(cb);
-	// else
   krping_test_server(cb);
   return 0;
 
@@ -2019,7 +2028,7 @@ int krping_doit(char *cmd)
 
 	cb->server = -1;
 	cb->state = IDLE;
-	cb->size = 64;
+	cb->size = 8192;
 	cb->txdepth = RPING_SQ_DEPTH;
 	init_waitqueue_head(&cb->sem);
 
