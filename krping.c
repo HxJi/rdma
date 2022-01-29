@@ -1554,6 +1554,15 @@ static int krping_test_client(struct krping_cb *cb)
     // break;
   }
 
+	int cmp_res = -100;
+	if(cb->rdma_buf[0] == 1){
+		cmp_res = 200;
+	}
+	else{
+		cmp_res = 100;
+	}
+	pr_info("client received cmp res:%d.\n", cmp_res);
+
   if (cb->validate)
     if (memcmp(cb->start_buf, cb->rdma_buf, cb->size)) {
       printk(KERN_ERR PFX "data mismatch!\n");
@@ -1565,15 +1574,6 @@ static int krping_test_client(struct krping_cb *cb)
     printk(KERN_INFO PFX "ping data (64B max): |%.64s|\n",
       cb->rdma_buf);
   
-  int cmp_res = -100;
-  if(cb->rdma_buf[0] == 1){
-		cmp_res = 200;
-	}
-	else{
-		cmp_res = 100;
-	}
-	pr_info("client received cmp res:%d.\n", cmp_res);
-
   return 0;
 
 #ifdef SLOW_KRPING
