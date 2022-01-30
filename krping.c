@@ -1501,7 +1501,7 @@ static int krping_test_client(struct krping_cb *cb)
 
   /* Put some ascii text in the buffer. */
   cc = sprintf(cb->start_buf, "rdma-ping-%d: ", ping);
-  half_size = cb->size/2;
+  int half_size = cb->size/2;
   for (i = cc, c = start; i < half_size; i++) {
     cb->start_buf[i] = c;
     cb->start_buf[i+half_size] = c;
@@ -1512,7 +1512,7 @@ static int krping_test_client(struct krping_cb *cb)
   start++;
   if (start > 122)
     start = 65;
-  cb->start_buf[cb->size - 1] = 0;
+  // cb->start_buf[cb->size - 1] = 0;
 
   krping_format_send(cb, cb->start_dma_addr);
   if (cb->state == ERROR) {
