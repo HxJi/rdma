@@ -839,18 +839,21 @@ static void krping_test_server(struct krping_cb *cb)
 
 		// [hj14] after server recieved the data
 		int i, page_size, cmp_res;
+		unsigned char c;
 		page_size = cb->size/2;
 		for(i = 0; i < page_size; i++){
 			if ((cmp_res = cb->rdma_buf[i] - cb->rdma_buf[i+page_size]) != 0)
 				break;
 		}
 		if(cmp_res != 0){
+			c = 65;
 			pr_info("compare result:%d.\n", cmp_res);
-			cb->rdma_buf[0] = 1;
+			cb->rdma_buf[0] = c;
 		}
 		else{
+			c = 70;
 			pr_info("compare result:%d.\n", cmp_res);
-			cb->rdma_buf[0] = 0;
+			cb->rdma_buf[0] = c;
 		}
 
 		/* Tell client to continue */
