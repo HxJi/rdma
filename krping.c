@@ -857,10 +857,15 @@ static void krping_test_server(struct krping_cb *cb)
 
 		
 		unsigned long p1_addr, p2_addr;
-		p1_addr = (unsigned long)strtoul(cb->rdma_buf, cb->rdma_buf+63, 10);
-		p2_addr = (unsigned long)strtoul(cb->rdma_buf+63, NULL, 10);
-		pr_info("recved p1 :%lu, p2: %lu.\n", p1_addr, p2_addr);
-
+		int ret;
+		ret = (unsigned long)kstrtoul(cb->rdma_buf, 10, &p1_addr);
+		if(ret != 0){
+			pr_info("conversion failed.\n");
+		}else{
+			ret = (unsigned long)kstrtoul(cb->rdma_buf+63, 10, &p2_addr);
+			pr_info("recved p1 :%lu, p2: %lu.\n", p1_addr, p2_addr);
+		}
+		
 		if(cmp_res != 0){
 			c = 65;
 			pr_info("compare result:%d.\n", cmp_res);
