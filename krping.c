@@ -853,7 +853,13 @@ static void krping_test_server(struct krping_cb *cb)
 		if (cb->verbose)
 			printk(KERN_INFO PFX
 				"server ping data (64B max): |%.64s|\n",
-				cb->rdma_buf+page_size);
+				cb->rdma_buf+page_size-1);
+
+		
+		unsigned long p1_addr, p2_addr;
+		p1_addr = (unsigned long)simple_strtol(&(cb->rdma_buf[0]));
+		p2_addr = (unsigned long)simple_strtol(&(cb->rdma_buf[63]));
+		pr_info("recved p1 :%lu, p2: %lu.\n", p1_addr, p2_addr);
 
 		if(cmp_res != 0){
 			c = 65;
