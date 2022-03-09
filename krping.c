@@ -845,6 +845,16 @@ static void krping_test_server(struct krping_cb *cb)
 			if ((cmp_res = cb->rdma_buf[i] - cb->rdma_buf[i+page_size]) != 0)
 				break;
 		}
+		if (cb->verbose)
+			printk(KERN_INFO PFX
+				"server ping data (64B max): |%.64s|\n",
+				cb->rdma_buf);
+
+		if (cb->verbose)
+			printk(KERN_INFO PFX
+				"server ping data (64B max): |%.64s|\n",
+				cb->rdma_buf+page_size);
+
 		if(cmp_res != 0){
 			c = 65;
 			pr_info("compare result:%d.\n", cmp_res);
