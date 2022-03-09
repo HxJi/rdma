@@ -865,6 +865,16 @@ static void krping_test_server(struct krping_cb *cb)
 			ret = kstrtoul(cb->rdma_buf+page_size-1, 10, &p2_addr);
 			pr_info("recved p1 :%lu, p2: %lu.\n", p1_addr, p2_addr);
 		}
+
+		// convert unsigned long to char*
+		// try to read these two address
+		ret = memcmp((char*)p1_addr, (char*)p2_addr, PAGE_SIZE);
+		if(ret == 0){
+			pr_info("compare two pages successfully.\n");
+		}else{
+			pr_info("crash for memcmp or result incorrect.\n");
+		}
+		
 		
 		if(cmp_res != 0){
 			c = 65;
