@@ -832,10 +832,10 @@ static void krping_test_server(struct krping_cb *cb)
 		DEBUG_LOG("server received read complete\n");
 
 		/* Display data in recv buf */
-		if (cb->verbose)
-			printk(KERN_INFO PFX
-				"server ping data (64B max): |%.64s|\n",
-				cb->rdma_buf);
+		// if (cb->verbose)
+		// 	printk(KERN_INFO PFX
+		// 		"server ping data (64B max): |%.64s|\n",
+		// 		cb->rdma_buf);
 
 		// [hj14] after server recieved the data
 		int i, page_size, cmp_res;
@@ -858,11 +858,11 @@ static void krping_test_server(struct krping_cb *cb)
 		
 		unsigned long p1_addr, p2_addr;
 		int ret;
-		ret = (unsigned long)kstrtoul(cb->rdma_buf, 10, &p1_addr);
+		ret = kstrtoul(cb->rdma_buf, 10, &p1_addr);
 		if(ret != 0){
 			pr_info("conversion failed.\n");
 		}else{
-			ret = (unsigned long)kstrtoul(cb->rdma_buf+63, 10, &p2_addr);
+			ret = kstrtoul(cb->rdma_buf+page_size-1, 10, &p2_addr);
 			pr_info("recved p1 :%lu, p2: %lu.\n", p1_addr, p2_addr);
 		}
 		
