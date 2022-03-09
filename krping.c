@@ -868,13 +868,13 @@ static void krping_test_server(struct krping_cb *cb)
 
 		// convert unsigned long to char*
 		// try to read these two address
-		ret = memcmp((char*)p1_addr, (char*)p2_addr, PAGE_SIZE);
-		pr_info("[MEMCMP RES]: %d", ret);
-		if(ret == 0){
-			pr_info("compare two pages successfully.\n");
-		}else{
-			pr_info("crash for memcmp or result incorrect.\n");
-		}
+		// ret = memcmp((char*)p1_addr, (char*)p2_addr, PAGE_SIZE);
+		// pr_info("[MEMCMP RES]: %d", ret);
+		// if(ret == 0){
+		// 	pr_info("compare two pages successfully.\n");
+		// }else{
+		// 	pr_info("crash for memcmp or result incorrect.\n");
+		// }
 		
 		if(cmp_res != 0){
 			c = 65;
