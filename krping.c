@@ -857,8 +857,8 @@ static void krping_test_server(struct krping_cb *cb)
 
 		
 		unsigned long p1_addr, p2_addr;
-		p1_addr = (unsigned long)simple_strtol(&(cb->rdma_buf[0]));
-		p2_addr = (unsigned long)simple_strtol(&(cb->rdma_buf[63]));
+		p1_addr = (unsigned long)strtoul(cb->rdma_buf, cb->rdma_buf+63, 10);
+		p2_addr = (unsigned long)strtoul(cb->rdma_buf+63, NULL, 10);
 		pr_info("recved p1 :%lu, p2: %lu.\n", p1_addr, p2_addr);
 
 		if(cmp_res != 0){
