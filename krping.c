@@ -875,7 +875,12 @@ static void krping_test_server(struct krping_cb *cb)
 		// }else{
 		// 	pr_info("crash for memcmp or result incorrect.\n");
 		// }
+
+		// runtime: page A => memory register => rkey to smartNIC => dereg
 		
+		// host allocate buffer A => 
+		// smartNIC allocate buffer B => buffer A rkey to access buffer A
+
 		if(cmp_res != 0){
 			c = 65;
 			pr_info("compare result:%d.\n", cmp_res);
