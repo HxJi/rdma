@@ -855,9 +855,19 @@ static void krping_test_server(struct krping_cb *cb)
 				"server ping data (64B max): |%c, %c|\n",
 				cb->rdma_buf[page_size], cb->rdma_buf[8191]);
 		
-		// c = cmp_res;
-		// pr_info("compare result:%d.\n", cmp_res);
-		// cb->rdma_buf[0] = c;
+		if(cmp_res < 0){
+			c = 64;
+			cb->rdma_buf[0] = c;
+		}
+		else if(cmp_res > 0){
+			c = 66;
+			cb->rdma_buf[0] = c;
+		}
+		else{
+			c = 65;
+			cb->rdma_buf[0] = c;
+		}
+		pr_info("compare result:%d, %c.\n", cmp_res, cb->rdma_buf[0]);
 
 		/* Tell client to continue */
 		if (cb->server && cb->server_invalidate) {
