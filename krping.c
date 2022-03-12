@@ -848,49 +848,17 @@ static void krping_test_server(struct krping_cb *cb)
 		if (cb->verbose)
 			printk(KERN_INFO PFX
 				"server ping data (64B max): |%.64s|\n",
-				cb->rdma_buf);
+				cb->rdma_buf[0]);
 
 		if (cb->verbose)
 			printk(KERN_INFO PFX
 				"server ping data (64B max): |%.64s|\n",
-				cb->rdma_buf+page_size-1);
-
+				cb->rdma_buf[page_size]);
 		
-		unsigned long p1_addr, p2_addr;
-		int ret;
-		ret = kstrtoul(cb->rdma_buf, 10, &p1_addr);
-		if(ret != 0){
-			pr_info("conversion failed.\n");
-		}else{
-			ret = kstrtoul(cb->rdma_buf+page_size-1, 10, &p2_addr);
-			pr_info("recved p1 :%lu, p2: %lu.\n", p1_addr, p2_addr);
-		}
-
-		// convert unsigned long to char*
-		// try to read these two address
-		// ret = memcmp((char*)p1_addr, (char*)p2_addr, PAGE_SIZE);
-		// pr_info("[MEMCMP RES]: %d", ret);
-		// if(ret == 0){
-		// 	pr_info("compare two pages successfully.\n");
-		// }else{
-		// 	pr_info("crash for memcmp or result incorrect.\n");
-		// }
-
-		// runtime: page A => memory register => rkey to smartNIC => dereg
+		c = cmp_res;
+		pr_info("compare result:%d.\n", cmp_res);
+		cb->rdma_buf[0] = c;
 		
-		// host allocate buffer A => 
-		// smartNIC allocate buffer B => buffer A rkey to access buffer A
-
-		if(cmp_res != 0){
-			c = 65;
-			pr_info("compare result:%d.\n", cmp_res);
-			cb->rdma_buf[0] = c;
-		}
-		else{
-			c = 70;
-			pr_info("compare result:%d.\n", cmp_res);
-			cb->rdma_buf[0] = c;
-		}
 
 		/* Tell client to continue */
 		if (cb->server && cb->server_invalidate) {
@@ -2078,7 +2046,7 @@ int krping_doit(char *cmd)
 
 	cb->server = -1;
 	cb->state = IDLE;
-	cb->size = 129;
+	cb->size = 8193;
 	cb->txdepth = RPING_SQ_DEPTH;
 	init_waitqueue_head(&cb->sem);
 
