@@ -847,13 +847,13 @@ static void krping_test_server(struct krping_cb *cb)
 		}
 		if (cb->verbose)
 			printk(KERN_INFO PFX
-				"server ping data (64B max): |%c|\n",
-				cb->rdma_buf[0]);
+				"server ping data (64B max): |%c, %c|\n",
+				cb->rdma_buf[0], cb->rdma_buf[4095]);
 
 		if (cb->verbose)
 			printk(KERN_INFO PFX
-				"server ping data (64B max): |%c|\n",
-				cb->rdma_buf[page_size]);
+				"server ping data (64B max): |%c, %c|\n",
+				cb->rdma_buf[page_size], cb->rdma_buf[8191]);
 		
 		// c = cmp_res;
 		// pr_info("compare result:%d.\n", cmp_res);
