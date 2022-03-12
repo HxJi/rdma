@@ -847,18 +847,17 @@ static void krping_test_server(struct krping_cb *cb)
 		}
 		if (cb->verbose)
 			printk(KERN_INFO PFX
-				"server ping data (64B max): |%.64s|\n",
+				"server ping data (64B max): |%c|\n",
 				cb->rdma_buf[0]);
 
 		if (cb->verbose)
 			printk(KERN_INFO PFX
-				"server ping data (64B max): |%.64s|\n",
+				"server ping data (64B max): |%c|\n",
 				cb->rdma_buf[page_size]);
 		
-		c = cmp_res;
-		pr_info("compare result:%d.\n", cmp_res);
-		cb->rdma_buf[0] = c;
-		
+		// c = cmp_res;
+		// pr_info("compare result:%d.\n", cmp_res);
+		// cb->rdma_buf[0] = c;
 
 		/* Tell client to continue */
 		if (cb->server && cb->server_invalidate) {
