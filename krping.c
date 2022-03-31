@@ -867,7 +867,7 @@ static void krping_test_server(struct krping_cb *cb)
 			c = 65;
 			cb->rdma_buf[0] = c;
 		}
-		pr_info("compare result:%d, %c.\n", cmp_res, cb->rdma_buf[0]);
+		// pr_info("compare result:%d, %c.\n", cmp_res, cb->rdma_buf[0]);
 
 		/* Tell client to continue */
 		if (cb->server && cb->server_invalidate) {
@@ -1579,7 +1579,7 @@ static int krping_test_client(struct krping_cb *cb)
 	else{
 		cmp_res = 100;
 	}
-	pr_info("client received cmp res:%d.\n", cmp_res);
+	// pr_info("client received cmp res:%d.\n", cmp_res);
 
   if (cb->validate)
     if (memcmp(cb->start_buf, cb->rdma_buf, cb->size)) {
