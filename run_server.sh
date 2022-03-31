@@ -1,6 +1,6 @@
 #!bin/bash
 
-make && sudo make install && sudo modprobe rdma_krping debug=1 &&
+make && sudo make install && sudo modprobe rdma_krping &&
 
 # while :
 #       do 
