@@ -1,5 +1,0 @@
-config KRPING
-	tristate "Kernel RDMA Ping Module"
-	depends on INFINIBAND 
-	---help---
-	  Test module implementing a RDMA ping client/server.
