@@ -842,19 +842,25 @@ static void krping_test_server(struct krping_cb *cb)
 				"server ping data (64B max): |%.64s|\n",
 				cb->rdma_buf);
 
-		// Modify the data here
-		unsigned char c;
-		c = 65;
+		// Compare & Modify the data here
+		int i, page_size, cmp_res;
+		unsigned char result;
+		page_size = cb->size/2;
+		for(i = 0; i < page_size; i++){
+			if ((cmp_res = cb->rdma_buf[i] - cb->rdma_buf[i+page_size]) != 0)
+				break;
+		}
+		if(cmp_res == 0) c = 100;
+		else if(cmp_res > 0) c = 101;
+		else	c = 99;
 		cb->rdma_buf[0] = c;
-
-		// Avoid new rkey generation & Keep same cb config
 
 		/* RDMA Write echo data */
 		cb->rdma_sq_wr.wr.opcode = IB_WR_RDMA_WRITE;
 		cb->rdma_sq_wr.rkey = cb->remote_rkey;
 		cb->rdma_sq_wr.remote_addr = cb->remote_addr;
-		// cb->rdma_sq_wr.wr.sg_list->length = strlen(cb->rdma_buf) + 1;
-		cb->rdma_sq_wr.wr.sg_list->length = cb->remote_len;
+		cb->rdma_sq_wr.wr.sg_list->length = strlen(cb->rdma_buf) + 1;
+		// cb->rdma_sq_wr.wr.sg_list->length = cb->remote_len;
 		if (cb->local_dma_lkey)
 			cb->rdma_sgl.lkey = cb->pd->local_dma_lkey;
 		else 
