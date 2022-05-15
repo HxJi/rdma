@@ -346,11 +346,12 @@ static int client_recv(struct krping_cb *cb, struct ib_wc *wc)
 		return -1;
 	}
 
-	if (cb->state == RDMA_READ_ADV)
-		cb->state = RDMA_WRITE_ADV;
-	else
-		cb->state = RDMA_WRITE_COMPLETE;
+	// if (cb->state == RDMA_READ_ADV)
+	// 	cb->state = RDMA_WRITE_ADV;
+	// else
+	// 	cb->state = RDMA_WRITE_COMPLETE;
 
+	cb->state = RDMA_WRITE_COMPLETE;
 	DEBUG_LOG("Client Received rkey %x addr %llx len %d from peer, State changed to %d\n",
 		  cb->remote_rkey, (unsigned long long)cb->remote_addr, 
 		  cb->remote_len, cb->state);
