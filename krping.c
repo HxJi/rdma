@@ -351,6 +351,7 @@ static int client_recv(struct krping_cb *cb, struct ib_wc *wc)
 	// else
 	// 	cb->state = RDMA_WRITE_COMPLETE;
 
+	// Be careful about the state changes
 	cb->state = RDMA_WRITE_COMPLETE;
 	DEBUG_LOG("Client Received rkey %x addr %llx len %d from peer, State changed to %d\n",
 		  cb->remote_rkey, (unsigned long long)cb->remote_addr, 
