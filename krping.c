@@ -850,10 +850,10 @@ static void krping_test_server(struct krping_cb *cb)
 			if ((cmp_res = cb->rdma_buf[i] - cb->rdma_buf[i+page_size]) != 0)
 				break;
 		}
-		if(cmp_res == 0) c = 100;
-		else if(cmp_res > 0) c = 101;
-		else	c = 99;
-		cb->rdma_buf[0] = c;
+		if(cmp_res == 0) result = 100;
+		else if(cmp_res > 0) result = 101;
+		else	result = 99;
+		cb->rdma_buf[0] = result;
 
 		/* RDMA Write echo data */
 		cb->rdma_sq_wr.wr.opcode = IB_WR_RDMA_WRITE;
