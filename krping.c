@@ -223,6 +223,10 @@ struct krping_cb {
 	int count;			/* ping count */
 	int size;			/* ping data size */
 	int validate;			/* validate ping data */
+	int wlat;			/* run wlat test */
+	int rlat;			/* run rlat test */
+	int bw;				/* run bw test */
+	int duplex;			/* run bw full duplex test */
 	int poll;			/* poll or block for rlat test */
 	int txdepth;			/* SQ depth */
 	int local_dma_lkey;		/* use 0 for lkey */
