@@ -1045,6 +1045,9 @@ static void krping_test_client(struct krping_cb *cb)
 			printk(KERN_ERR PFX "post send error %d\n", ret);
 			break;
 		}
+		
+		// add pseudo state manually
+		cb->state = RDMA_WRITE_ADV;
 
 		/* Wait for the server to say the RDMA Write is complete. */
 		wait_event_interruptible(cb->sem, 
