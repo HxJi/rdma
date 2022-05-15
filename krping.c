@@ -834,18 +834,20 @@ static void krping_test_server(struct krping_cb *cb)
 
 		// Modify the data here
 
-		/* RDMA Write echo data */
-		cb->rdma_sq_wr.wr.opcode = IB_WR_RDMA_WRITE;
 		
+
 		// Avoid new rkey generation & Keep same cb config
 
-		// cb->rdma_sq_wr.rkey = cb->remote_rkey;
-		// cb->rdma_sq_wr.remote_addr = cb->remote_addr;
+		/* RDMA Write echo data */
+		cb->rdma_sq_wr.wr.opcode = IB_WR_RDMA_WRITE;
+		cb->rdma_sq_wr.rkey = cb->remote_rkey;
+		cb->rdma_sq_wr.remote_addr = cb->remote_addr;
 		// cb->rdma_sq_wr.wr.sg_list->length = strlen(cb->rdma_buf) + 1;
-		// if (cb->local_dma_lkey)
-		// 	cb->rdma_sgl.lkey = cb->pd->local_dma_lkey;
-		// else 
-		// 	cb->rdma_sgl.lkey = krping_rdma_rkey(cb, cb->rdma_dma_addr, 0);
+		cb->rdma_sq_wr.wr.sg_list->length = cb->remote_len;
+		if (cb->local_dma_lkey)
+			cb->rdma_sgl.lkey = cb->pd->local_dma_lkey;
+		else 
+			cb->rdma_sgl.lkey = krping_rdma_rkey(cb, cb->rdma_dma_addr, 1);
 			
 		DEBUG_LOG("rdma write from lkey %x laddr %llx len %d\n",
 			  cb->rdma_sq_wr.wr.sg_list->lkey,
