@@ -843,7 +843,7 @@ static void krping_test_server(struct krping_cb *cb)
 
 		// Modify the data here
 
-		
+		cb->rdma_buf[0] = 0;
 
 		// Avoid new rkey generation & Keep same cb config
 
