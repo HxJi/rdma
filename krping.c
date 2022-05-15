@@ -59,7 +59,7 @@
 
 #define PFX "krping: "
 
-static int debug = 0;
+static int debug = 1;
 module_param(debug, int, 0);
 MODULE_PARM_DESC(debug, "Debug level (0=none, 1=all)");
 #define DEBUG_LOG if (debug) printk
