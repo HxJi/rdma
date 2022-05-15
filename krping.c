@@ -875,17 +875,17 @@ static void krping_test_server(struct krping_cb *cb)
 
 		// Not neccessary to tell client to go ahead?
 		// /* Tell client to begin again */
-		// if (cb->server && cb->server_invalidate) {
-		// 	cb->sq_wr.ex.invalidate_rkey = cb->remote_rkey;
-		// 	cb->sq_wr.opcode = IB_WR_SEND_WITH_INV;
-		// 	DEBUG_LOG("send-w-inv rkey 0x%x\n", cb->remote_rkey);
-		// } 
-		// ret = ib_post_send(cb->qp, &cb->sq_wr, &bad_wr);
-		// if (ret) {
-		// 	printk(KERN_ERR PFX "post send error %d\n", ret);
-		// 	break;
-		// }
-		// DEBUG_LOG("server posted go ahead\n");
+		if (cb->server && cb->server_invalidate) {
+			cb->sq_wr.ex.invalidate_rkey = cb->remote_rkey;
+			cb->sq_wr.opcode = IB_WR_SEND_WITH_INV;
+			DEBUG_LOG("send-w-inv rkey 0x%x\n", cb->remote_rkey);
+		} 
+		ret = ib_post_send(cb->qp, &cb->sq_wr, &bad_wr);
+		if (ret) {
+			printk(KERN_ERR PFX "post send error %d\n", ret);
+			break;
+		}
+		DEBUG_LOG("server posted go ahead\n");
 	}
 }
 
@@ -1046,9 +1046,6 @@ static void krping_test_client(struct krping_cb *cb)
 			break;
 		}
 		
-		// add pseudo state manually
-		cb->state = RDMA_WRITE_ADV;
-
 		/* Wait for the server to say the RDMA Write is complete. */
 		wait_event_interruptible(cb->sem, 
 					 cb->state >= RDMA_WRITE_COMPLETE);
