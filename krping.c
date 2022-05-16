@@ -59,8 +59,8 @@
 
 #define PFX "krping: "
 
-static int debug = 1;
-module_param(debug, int, 1);
+static int debug = 0;
+module_param(debug, int, 0);
 MODULE_PARM_DESC(debug, "Debug level (0=none, 1=all)");
 #define DEBUG_LOG if (debug) printk
 
@@ -848,18 +848,23 @@ static void krping_test_server(struct krping_cb *cb)
 		}
 		if (cb->verbose)
 			printk(KERN_INFO PFX
-				"server ping data (64B max): |%c, %c|\n",
+				"server ping data page1 (64B max): |%c, %c|\n",
 				cb->rdma_buf[0], cb->rdma_buf[4095]);
 
 		if (cb->verbose)
 			printk(KERN_INFO PFX
-				"server ping data (64B max): |%c, %c|\n",
+				"server ping data page2 (64B max): |%c, %c|\n",
 				cb->rdma_buf[page_size], cb->rdma_buf[8191]);
 		
 		if(cmp_res == 0) result = 100;
 		else if(cmp_res > 0) result = 101;
 		else	result = 99;
 		cb->rdma_buf[0] = result;
+
+		if (cb->verbose)
+			printk(KERN_INFO PFX
+				"After change server ping data (64B max): |%c, %c|\n",
+				cb->rdma_buf[0], cb->rdma_buf[4095]);
 
 		// pr_info("compare result:%d, %c.\n", cmp_res, cb->rdma_buf[0]);
 
@@ -1511,6 +1516,7 @@ static int krping_test_client(struct krping_cb *cb)
 
   /* Put some ascii text in the buffer. */
   // cc = sprintf(cb->start_buf, "rdma-ping-%d: ", ping);
+  c = start;
   int half_size = cb->size/2;
   for (i = 0; i < half_size; i++) {
     cb->rdma_buf[i] = c;
@@ -1588,6 +1594,12 @@ static int krping_test_client(struct krping_cb *cb)
   if (cb->verbose)
     printk(KERN_INFO PFX "ping data (64B max): |%.64s|\n",
       cb->rdma_buf);
+ if (cb->verbose){
+	 printk(KERN_INFO PFX
+		"server ping data (64B max): |%c, %c|\n",
+		cb->rdma_buf[page_size], cb->rdma_buf[8191]);
+ }
+	
   
   return 0;
 
