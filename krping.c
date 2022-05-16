@@ -1597,7 +1597,7 @@ static int krping_test_client(struct krping_cb *cb)
  if (cb->verbose){
 	 printk(KERN_INFO PFX
 		"server ping data (64B max): |%c, %c|\n",
-		cb->rdma_buf[page_size], cb->rdma_buf[8191]);
+		cb->rdma_buf[0], cb->rdma_buf[cb->size/2]);
  }
 	
   
