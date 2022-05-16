@@ -1513,8 +1513,8 @@ static int krping_test_client(struct krping_cb *cb)
   // cc = sprintf(cb->start_buf, "rdma-ping-%d: ", ping);
   int half_size = cb->size/2;
   for (i = 0; i < half_size; i++) {
-    cb->start_buf[i] = c;
-    cb->start_buf[i+half_size] = c;
+    cb->rdma_buf[i] = c;
+    cb->rdma_buf[i+half_size] = c;
     c++;
     if (c > 122)
       c = 65;
@@ -1524,7 +1524,7 @@ static int krping_test_client(struct krping_cb *cb)
     start = 65;
   // cb->start_buf[cb->size - 1] = 0;
 
-  krping_format_send(cb, cb->start_dma_addr);
+  krping_format_send(cb, cb->rdma_dma_addr);
   if (cb->state == ERROR) {
     printk(KERN_ERR PFX "krping_format_send failed\n");
     return -1;
@@ -1566,12 +1566,15 @@ static int krping_test_client(struct krping_cb *cb)
     // break;
   }
 
-	int cmp_res = -100;
-	if(cb->rdma_buf[0] == 1){
-		cmp_res = 200;
+	int cmp_res = 0;
+	if(cb->rdma_buf[0] == (unsigned char)101){
+		cmp_res = 1;
+	}
+	else if(cb->rdma_buf[0] == (unsigned char)99){
+		cmp_res = -1;
 	}
 	else{
-		cmp_res = 100;
+		cmp_res = 0;
 	}
 	// pr_info("client received cmp res:%d.\n", cmp_res);
 
