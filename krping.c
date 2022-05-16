@@ -874,10 +874,11 @@ static void krping_test_server(struct krping_cb *cb)
 				"server ping data page2 (64B max): |%c, %c|\n",
 				cb->rdma_buf[0], cb->rdma_buf[8191]);
 		
+        /*
 		if(cmp_res == 0) result = 100;
 		else if(cmp_res > 0) result = 101;
 		else	result = 99;
-		cb->rdma_buf[0] = result;
+		cb->rdma_buf[0] = result;*/
 
 		if (cb->verbose)
 			printk(KERN_INFO PFX
