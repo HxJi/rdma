@@ -832,12 +832,28 @@ static void krping_test_server(struct krping_cb *cb)
 		}
 		DEBUG_LOG("server received read complete\n");
 
+        // [yans3]
+        // ============================
+        //      start compression
+        // ============================
+        size_t dst_len;
+        u8* wrkmem = kmalloc(LZO1X_1_MEM_COMPRESS, GFP_KERNEL);
+        ret = lzo1x_1_compress(cb->rdma_buf, 4096, cb->rdma_buf + 4096, &dst_len, wrkmem);
+
+        // ============================
+        //      end compression
+        // ============================
+        kfree(wrkmem);
+        ((int*)cb->rdma_buf)[0] = ret;
+        ((int*)cb->rdma_buf)[1] = (int)dst_len;
+
 		/* Display data in recv buf */
 		// if (cb->verbose)
 		// 	printk(KERN_INFO PFX
 		// 		"server ping data (64B max): |%.64s|\n",
 		// 		cb->rdma_buf);
 
+        /*
 		// [hj14] after server recieved the data
 		int i, page_size, cmp_res;
 		unsigned char result;
@@ -845,7 +861,7 @@ static void krping_test_server(struct krping_cb *cb)
 		for(i = 0; i < page_size; i++){
 			if ((cmp_res = cb->rdma_buf[i] - cb->rdma_buf[i+page_size]) != 0)
 				break;
-		}
+		}*/
 		if (cb->verbose)
 			printk(KERN_INFO PFX
 				"server ping data page1 (64B max): |%c, %c|\n",
