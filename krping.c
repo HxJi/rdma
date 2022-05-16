@@ -119,14 +119,11 @@ static struct proc_dir_entry *krping_proc;
  * /bin/echo client,port=9999,addr6=2001:db8:0:f101::1,validate > /proc/krping
  *
  * krping "ping/pong" loop:
- * 	client sends source rkey/addr/len
- *	server receives source rkey/add/len
- *	server rdma reads "ping" data from source
- * 	server sends "go ahead" on rdma read completion
- *	client sends sink rkey/addr/len
- * 	server receives sink rkey/addr/len
- * 	server rdma writes "pong" data to sink
- * 	server sends "go ahead" on rdma write completion
+ * 	Host sends source rkey/addr/len (rdma_buffer)
+ *	SmartNIC receives source rkey/add/len
+ *	SmartNIC rdma reads "ping" data from source
+ * 	SmartNIC rdma writes "pong" data to rdma_buffer
+ * 	SmartNIC sends "go ahead" on rdma write completion
  * 	<repeat loop>
  */
 
