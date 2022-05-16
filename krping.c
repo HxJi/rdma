@@ -347,10 +347,11 @@ static int client_recv(struct krping_cb *cb, struct ib_wc *wc)
 		return -1;
 	}
 
-	if (cb->state == RDMA_READ_ADV)
-		cb->state = RDMA_WRITE_ADV;
-	else
-		cb->state = RDMA_WRITE_COMPLETE;
+	// if (cb->state == RDMA_READ_ADV)
+	// 	cb->state = RDMA_WRITE_ADV;
+	// else
+	// 	cb->state = RDMA_WRITE_COMPLETE;
+	cb->state = RDMA_WRITE_COMPLETE;
 
 	return 0;
 }
@@ -1505,8 +1506,8 @@ static int krping_test_client(struct krping_cb *cb)
 	unsigned char c;
 
 	start = 65;
-  ping = 1;
-  cb->state = RDMA_READ_ADV;
+	ping = 1;
+	cb->state = RDMA_READ_ADV;
 
   /* Put some ascii text in the buffer. */
   // cc = sprintf(cb->start_buf, "rdma-ping-%d: ", ping);
@@ -1536,23 +1537,23 @@ static int krping_test_client(struct krping_cb *cb)
     // break;
   }
 
-  /* Wait for server to ACK */
-  wait_event_interruptible(cb->sem, cb->state >= RDMA_WRITE_ADV);
-  if (cb->state != RDMA_WRITE_ADV) {
-    printk(KERN_ERR PFX 
-            "wait for RDMA_WRITE_ADV state %d\n",
-            cb->state);
-    return -3;
-    // break;
-  }
+//   /* Wait for server to ACK */
+//   wait_event_interruptible(cb->sem, cb->state >= RDMA_WRITE_ADV);
+//   if (cb->state != RDMA_WRITE_ADV) {
+//     printk(KERN_ERR PFX 
+//             "wait for RDMA_WRITE_ADV state %d\n",
+//             cb->state);
+//     return -3;
+//     // break;
+//   }
 
-  krping_format_send(cb, cb->rdma_dma_addr);
-  ret = ib_post_send(cb->qp, &cb->sq_wr, &bad_wr);
-  if (ret) {
-    printk(KERN_ERR PFX "post send error %d\n", ret);
-    return -4;
-    // break;
-  }
+//   krping_format_send(cb, cb->rdma_dma_addr);
+//   ret = ib_post_send(cb->qp, &cb->sq_wr, &bad_wr);
+//   if (ret) {
+//     printk(KERN_ERR PFX "post send error %d\n", ret);
+//     return -4;
+//     // break;
+//   }
 
   /* Wait for the server to say the RDMA Write is complete. */
   wait_event_interruptible(cb->sem, 
