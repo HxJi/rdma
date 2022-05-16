@@ -49,6 +49,8 @@
 #include <linux/signal.h>
 #include <linux/proc_fs.h>
 
+#include <linux/lzo.h>
+
 #include <asm/atomic.h>
 #include <asm/pci.h>
 
