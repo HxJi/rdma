@@ -839,7 +839,7 @@ static void krping_test_server(struct krping_cb *cb)
 
 		// [hj14] after server recieved the data
 		int i, page_size, cmp_res;
-		unsigned char c;
+		unsigned char result;
 		page_size = cb->size/2;
 		for(i = 0; i < page_size; i++){
 			if ((cmp_res = cb->rdma_buf[i] - cb->rdma_buf[i+page_size]) != 0)
