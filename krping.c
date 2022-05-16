@@ -855,42 +855,35 @@ static void krping_test_server(struct krping_cb *cb)
 				"server ping data (64B max): |%c, %c|\n",
 				cb->rdma_buf[page_size], cb->rdma_buf[8191]);
 		
-		if(cmp_res < 0){
-			c = 64;
-			cb->rdma_buf[0] = c;
-		}
-		else if(cmp_res > 0){
-			c = 66;
-			cb->rdma_buf[0] = c;
-		}
-		else{
-			c = 65;
-			cb->rdma_buf[0] = c;
-		}
+		if(cmp_res == 0) result = 100;
+		else if(cmp_res > 0) result = 101;
+		else	result = 99;
+		cb->rdma_buf[0] = result;
+
 		// pr_info("compare result:%d, %c.\n", cmp_res, cb->rdma_buf[0]);
 
-		/* Tell client to continue */
-		if (cb->server && cb->server_invalidate) {
-			cb->sq_wr.ex.invalidate_rkey = cb->remote_rkey;
-			cb->sq_wr.opcode = IB_WR_SEND_WITH_INV;
-			DEBUG_LOG("send-w-inv rkey 0x%x\n", cb->remote_rkey);
-		} 
-		ret = ib_post_send(cb->qp, &cb->sq_wr, &bad_wr);
-		if (ret) {
-			printk(KERN_ERR PFX "post send error %d\n", ret);
-			break;
-		}
-		DEBUG_LOG("server posted go ahead\n");
+		// /* Tell client to continue */
+		// if (cb->server && cb->server_invalidate) {
+		// 	cb->sq_wr.ex.invalidate_rkey = cb->remote_rkey;
+		// 	cb->sq_wr.opcode = IB_WR_SEND_WITH_INV;
+		// 	DEBUG_LOG("send-w-inv rkey 0x%x\n", cb->remote_rkey);
+		// } 
+		// ret = ib_post_send(cb->qp, &cb->sq_wr, &bad_wr);
+		// if (ret) {
+		// 	printk(KERN_ERR PFX "post send error %d\n", ret);
+		// 	break;
+		// }
+		// DEBUG_LOG("server posted go ahead\n");
 
-		/* Wait for client's RDMA STAG/TO/Len */
-		wait_event_interruptible(cb->sem, cb->state >= RDMA_WRITE_ADV);
-		if (cb->state != RDMA_WRITE_ADV) {
-			printk(KERN_ERR PFX 
-			       "wait for RDMA_WRITE_ADV state %d\n",
-			       cb->state);
-			break;
-		}
-		DEBUG_LOG("server received sink adv\n");
+		// /* Wait for client's RDMA STAG/TO/Len */
+		// wait_event_interruptible(cb->sem, cb->state >= RDMA_WRITE_ADV);
+		// if (cb->state != RDMA_WRITE_ADV) {
+		// 	printk(KERN_ERR PFX 
+		// 	       "wait for RDMA_WRITE_ADV state %d\n",
+		// 	       cb->state);
+		// 	break;
+		// }
+		// DEBUG_LOG("server received sink adv\n");
 
 		/* RDMA Write echo data */
 		cb->rdma_sq_wr.wr.opcode = IB_WR_RDMA_WRITE;
