@@ -724,7 +724,7 @@ static u32 krping_rdma_rkey(struct krping_cb *cb, u64 buf, int post_inv)
 	if (buf == (u64)cb->start_dma_addr)
 		cb->reg_mr_wr.access = IB_ACCESS_REMOTE_READ;
 	else
-		cb->reg_mr_wr.access = IB_ACCESS_REMOTE_WRITE | IB_ACCESS_LOCAL_WRITE;
+		cb->reg_mr_wr.access = IB_ACCESS_REMOTE_READ | IB_ACCESS_REMOTE_WRITE | IB_ACCESS_LOCAL_WRITE;
 	sg_dma_address(&sg) = buf;
 	sg_dma_len(&sg) = cb->size;
 
