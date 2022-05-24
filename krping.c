@@ -846,8 +846,18 @@ static void krping_test_server(struct krping_cb *cb)
         //      end compression
         // ============================
         kfree(wrkmem);
-        ((int*)cb->rdma_buf)[0] = ret;
-        ((int*)cb->rdma_buf)[1] = (int)dst_len;
+		// byte 0-3
+		// byte 4-7
+		int shift;
+		int i;
+		for (i = 0; i < 4; i++) {
+			shift = i * 8;	
+			cb->rdma_buf[i] = (ret >> shift) & 0xFF;
+			cb->rdma_buf[4 + i] = (dst_len >> shift) & 0xFF;
+		}
+
+		DEBUG_LOG("compression complete\n");
+
 
 		/* Display data in recv buf */
 		// if (cb->verbose)
@@ -866,24 +876,8 @@ static void krping_test_server(struct krping_cb *cb)
 		}*/
 		if (cb->verbose)
 			printk(KERN_INFO PFX
-				"server ping data page1 (64B max): |%c, %c|\n",
-				cb->rdma_buf[0], cb->rdma_buf[4095]);
-
-		if (cb->verbose)
-			printk(KERN_INFO PFX
-				"server ping data page2 (64B max): |%c, %c|\n",
-				cb->rdma_buf[0], cb->rdma_buf[8191]);
-		
-        /*
-		if(cmp_res == 0) result = 100;
-		else if(cmp_res > 0) result = 101;
-		else	result = 99;
-		cb->rdma_buf[0] = result;*/
-
-		if (cb->verbose)
-			printk(KERN_INFO PFX
-				"After change server ping data (64B max): |%c, %c|\n",
-				cb->rdma_buf[0], cb->rdma_buf[4095]);
+				"compress status: %d/ compressed len: %d\n",
+				ret, dst_len);
 
 		// pr_info("compare result:%d, %c.\n", cmp_res, cb->rdma_buf[0]);
 
@@ -914,7 +908,8 @@ static void krping_test_server(struct krping_cb *cb)
 		cb->rdma_sq_wr.wr.opcode = IB_WR_RDMA_WRITE;
 		cb->rdma_sq_wr.rkey = cb->remote_rkey;
 		cb->rdma_sq_wr.remote_addr = cb->remote_addr;
-		cb->rdma_sq_wr.wr.sg_list->length = strlen(cb->rdma_buf) + 1;
+		//cb->rdma_sq_wr.wr.sg_list->length = strlen(cb->rdma_buf) + 1;
+		cb->rdma_sq_wr.wr.sg_list->length = cb->size;
 		if (cb->local_dma_lkey)
 			cb->rdma_sgl.lkey = cb->pd->local_dma_lkey;
 		else 
