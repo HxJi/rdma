@@ -1518,6 +1518,25 @@ err0:
     return -1;
 }
 
+/*
+ * server wait_queue
+ *
+ * client --> rdma write
+ * client wait_queue
+ *
+ *        --> write to server
+ *        --> handler wake server wait queue
+ *            server compress
+ *            
+ *        <-- server rdma write  
+ *            server wait_queue
+ *
+ *        <-- hanlder wake client wait queue
+ * client ret
+ *
+ * == loop ==
+ */
+
 static int krping_test_client(struct krping_cb *cb)
 {
     int ping, start, cc, i, ret;
@@ -1529,7 +1548,6 @@ static int krping_test_client(struct krping_cb *cb)
     cb->state = RDMA_READ_ADV;
 
     /* Put some ascii text in the buffer. */
-    // cc = sprintf(cb->start_buf, "rdma-ping-%d: ", ping);
     c = start;
     int half_size = cb->size/2;
     for (i = 0; i < half_size; i++) {
@@ -1542,14 +1560,16 @@ static int krping_test_client(struct krping_cb *cb)
     start++;
     if (start > 122)
         start = 65;
-    // cb->start_buf[cb->size - 1] = 0;
 
+    // prepare send
     krping_format_send(cb, cb->rdma_dma_addr);
     if (cb->state == ERROR) {
         printk(KERN_ERR PFX "krping_format_send failed\n");
         return -1;
         // break;
     }
+
+    // one sided rdam, write
     ret = ib_post_send(cb->qp, &cb->sq_wr, &bad_wr);
     if (ret) {
         printk(KERN_ERR PFX "post send error %d\n", ret);
@@ -1557,25 +1577,8 @@ static int krping_test_client(struct krping_cb *cb)
         // break;
     }
 
-    //   /* Wait for server to ACK */
-    //   wait_event_interruptible(cb->sem, cb->state >= RDMA_WRITE_ADV);
-    //   if (cb->state != RDMA_WRITE_ADV) {
-    //     printk(KERN_ERR PFX 
-    //             "wait for RDMA_WRITE_ADV state %d\n",
-    //             cb->state);
-    //     return -3;
-    //     // break;
-    //   }
-
-    //   krping_format_send(cb, cb->rdma_dma_addr);
-    //   ret = ib_post_send(cb->qp, &cb->sq_wr, &bad_wr);
-    //   if (ret) {
-    //     printk(KERN_ERR PFX "post send error %d\n", ret);
-    //     return -4;
-    //     // break;
-    //   }
-
     /* Wait for the server to say the RDMA Write is complete. */
+    // two sided rdma
     wait_event_interruptible(cb->sem, 
             cb->state >= RDMA_WRITE_COMPLETE);
     if (cb->state != RDMA_WRITE_COMPLETE) {
@@ -1583,38 +1586,25 @@ static int krping_test_client(struct krping_cb *cb)
                 "wait for RDMA_WRITE_COMPLETE state %d\n",
                 cb->state);
         return -5;
-        // break;
     }
 
-    int cmp_res = 0;
-    if(cb->rdma_buf[0] == (unsigned char)101){
-        cmp_res = 1;
-    }
-    else if(cb->rdma_buf[0] == (unsigned char)99){
-        cmp_res = -1;
-    }
-    else{
-        cmp_res = 0;
-    }
-    // pr_info("client received cmp res:%d.\n", cmp_res);
-
-    if (cb->validate)
-        if (memcmp(cb->start_buf, cb->rdma_buf, cb->size)) {
-            printk(KERN_ERR PFX "data mismatch!\n");
-            return -6;
-            // break;
-        }
-
-    if (cb->verbose)
-        printk(KERN_INFO PFX "ping data (64B max): |%.64s|\n",
-                cb->rdma_buf);
-    if (cb->verbose){
-        printk(KERN_INFO PFX
-                "server ping data (64B max): |%c, %c|\n",
-                cb->rdma_buf[0], cb->rdma_buf[cb->size/2]);
+    // rdma buf 
+    //      byte 0 - 3 -- compression ret
+    //      byte 4 - 7 -- compression len (dlen) 
+    int shift, mask;
+    int dlen;
+    ret = 0;
+    dlen = 0;
+    for (i = 0; i < 4; i++) {
+        shift = (i * 8);
+        mask = (0xFF << shift);
+        ret += ( ((unsigned int)(cb->rdma_buf[i]) << shift) & mask );
+        dlen += ( ((unsigned int)(cb->rdma_buf[4 + i]) << shift) & mask );
     }
 
-
+    if (cb->verbose) {
+        printk(KERN_INFO PFX "ret: %d, dlen: %d\n", ret, dlen);
+    }
     return 0;
 
 #ifdef SLOW_KRPING
