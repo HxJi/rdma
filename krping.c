@@ -1538,11 +1538,16 @@ err0:
  * == loop ==
  */
 
+uint64_t operation_cnt = 0;
+uint64_t send_prep_sum, post_send_sum, wake_up_sum, overall_sum;
+
 static int krping_test_client(struct krping_cb *cb)
 {
     int ping, start, cc, i, ret;
     const struct ib_send_wr *bad_wr;
     unsigned char c;
+
+    uint64_t start_time, send_prep_time, post_send_time, wake_up_time, end_time;
 
     start = 65;
     ping = 1;
@@ -1562,24 +1567,34 @@ static int krping_test_client(struct krping_cb *cb)
     if (start > 122)
         start = 65;
 
+    start_time = rdtsc();
+
+    // =================================
     // prepare send
+    // =================================
     krping_format_send(cb, cb->rdma_dma_addr);
     if (cb->state == ERROR) {
         printk(KERN_ERR PFX "krping_format_send failed\n");
         return -1;
         // break;
     }
+    send_prep_time = rdtsc();
 
+    // =================================
     // one sided rdam, write
+    // =================================
     ret = ib_post_send(cb->qp, &cb->sq_wr, &bad_wr);
     if (ret) {
         printk(KERN_ERR PFX "post send error %d\n", ret);
         return -2;
         // break;
     }
+    post_send_time = rdtsc();
 
+    // =================================
     /* Wait for the server to say the RDMA Write is complete. */
     // two sided rdma
+    // =================================
     wait_event_interruptible(cb->sem, 
             cb->state >= RDMA_WRITE_COMPLETE);
     if (cb->state != RDMA_WRITE_COMPLETE) {
@@ -1588,6 +1603,7 @@ static int krping_test_client(struct krping_cb *cb)
                 cb->state);
         return -5;
     }
+    wake_up_time = rdtsc();
 
     // rdma buf 
     //      byte 0 - 3 -- compression ret
@@ -1605,6 +1621,23 @@ static int krping_test_client(struct krping_cb *cb)
 
     if (cb->verbose) {
         printk(KERN_INFO PFX "ret: %d, dlen: %d\n", ret, dlen);
+    }
+
+    end_time = rdtsc();
+
+    operation_cnt++;
+    send_prep_sum += send_prep_time - start_time;
+    post_send_sum += post_send_time - send_prep_time;
+    wake_up_sum += wake_up_time - post_send_time;
+    overall_sum += end_time - start_time;
+
+    if (operation_cnt % 100 == 0) {
+        pr_info("========================== %d", operation_cnt); 
+        pr_info("send_prep: %d", send_prep_sum / operation_cnt);
+        pr_info("post_send: %d", post_send_sum / operation_cnt);
+        pr_info("wake_up  : %d", wake_up_sum / operation_cnt);
+        pr_info("overall  : %d", overall_sum / operation_cnt);
+        pr_info("=========================="); 
     }
     return 0;
 
@@ -2339,6 +2372,13 @@ static struct file_operations krping_ops = {
 static int __init krping_init(void)
 {
     DEBUG_LOG("krping_init\n");
+
+    operation_cnt = 1;
+    send_prep_sum = 0;
+    post_send_sum = 0;
+    wake_up_sum = 0;
+    overall_sum = 0;
+
     krping_proc = proc_create("krping", 0666, NULL, &krping_ops);
     if (krping_proc == NULL) {
         printk(KERN_ERR PFX "cannot create /proc/krping\n");
