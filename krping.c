@@ -70,6 +70,28 @@ MODULE_AUTHOR("Steve Wise");
 MODULE_DESCRIPTION("RDMA ping server");
 MODULE_LICENSE("Dual BSD/GPL");
 
+
+#ifdef __x86_64__
+    // do x64 stuff
+#elif __arm__
+// SPDX-License-Identifier: GPL-2.0
+u64 rdtsc(void)
+{
+    u64 val;
+
+    /*
+     * According to ARM DDI 0487F.c, from Armv8.0 to Armv8.5 inclusive, the
+     * system counter is at least 56 bits wide; from Armv8.6, the counter
+     * must be 64 bits wide.  So the system counter could be less than 64
+     * bits wide and it is attributed with the flag 'cap_user_time_short'
+     * is true.
+     */
+    asm volatile("mrs %0, cntvct_el0" : "=r" (val));
+
+    return val;
+}
+#endif
+
 static const struct krping_option krping_opts[] = {
     {"count", OPT_INT, 'C'},
     {"size", OPT_INT, 'S'},
@@ -2067,7 +2089,7 @@ static int krping_run_client(struct krping_cb *cb)
     int i = 0;
     for(i = 0; i < cb->count; i++){
         ret = krping_test_client(cb);
-        pr_info("krping_test_client result:%d", ret);
+        //pr_info("krping_test_client result:%d", ret);
     }
     // rdma_disconnect(cb->cm_id);
     return 0;
