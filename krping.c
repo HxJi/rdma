@@ -767,7 +767,7 @@ static void krping_format_send(struct krping_cb *cb, u64 buf)
         rkey = krping_rdma_rkey(cb, buf, !cb->server_invalidate);
         info->buf = htonll(buf);
         info->rkey = htonl(rkey);
-        info->size = htonl(cb->size);
+        info->size = htonl(4097); 
         DEBUG_LOG("RDMA addr %llx rkey %x len %d\n",
                 (unsigned long long)buf, rkey, cb->size);
     }
@@ -846,8 +846,9 @@ static void krping_test_server(struct krping_cb *cb)
         //      end compression
         // ============================
         kfree(wrkmem);
-        // byte 0-3
-        // byte 4-7
+        // byte 0-3, compress ret
+        // byte 4-7, compress len
+        // byte 4096 ~ += compress len, compress data
         int shift;
         int i;
         for (i = 0; i < 4; i++) {
@@ -2068,7 +2069,7 @@ int krping_doit(char *cmd)
 
     cb->server = -1;
     cb->state = IDLE;
-    cb->size = 4097;
+    cb->size = 8193;
     cb->txdepth = RPING_SQ_DEPTH;
     init_waitqueue_head(&cb->sem);
 
