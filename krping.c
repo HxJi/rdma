@@ -2068,7 +2068,7 @@ int krping_doit(char *cmd)
 
     cb->server = -1;
     cb->state = IDLE;
-    cb->size = 8193;
+    cb->size = 4097;
     cb->txdepth = RPING_SQ_DEPTH;
     init_waitqueue_head(&cb->sem);
 
