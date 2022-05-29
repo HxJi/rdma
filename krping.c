@@ -70,11 +70,8 @@ MODULE_AUTHOR("Steve Wise");
 MODULE_DESCRIPTION("RDMA ping server");
 MODULE_LICENSE("Dual BSD/GPL");
 
-
-#ifdef __x86_64__
-    // do x64 stuff
-#elif __arm__
-// SPDX-License-Identifier: GPL-2.0
+//#define ON_ARM
+#ifdef ON_ARM
 u64 rdtsc(void)
 {
     u64 val;
