@@ -795,14 +795,21 @@ static void krping_format_send(struct krping_cb *cb, u64 buf)
     }
 }
 
+static uint64_t operation_cnt = 0;
+static uint64_t serv_comp_sum, serv_wait_req_sum, serv_rd_issue_sum, serv_wait_rd_sum, serv_overall_sum, serv_wr_result_sum;
 static void krping_test_server(struct krping_cb *cb)
 {
     struct ib_send_wr inv;
     const struct ib_send_wr *bad_wr;
     int ret;
+    uint64_t serv_comp_t, serv_wait_req_t, serv_rd_issue_t, serv_wait_rd_t, serv_wr_result_t;
+    uint64_t start_t, end_t;
 
     while (1) {
+        // ============================
         /* Wait for client's Start STAG/TO/Len */
+        // ============================
+        start_t = rdtsc();
         wait_event_interruptible(cb->sem, cb->state >= RDMA_READ_ADV);
         if (cb->state != RDMA_READ_ADV) {
             // disconnect and break from here
@@ -810,6 +817,7 @@ static void krping_test_server(struct krping_cb *cb)
                     cb->state);
             break;
         }
+        serv_wait_req_t = rdtsc();
 
         DEBUG_LOG("server received sink adv\n");
 
@@ -819,7 +827,9 @@ static void krping_test_server(struct krping_cb *cb)
         cb->rdma_sgl.lkey = krping_rdma_rkey(cb, cb->rdma_dma_addr, !cb->read_inv);
         cb->rdma_sq_wr.wr.next = NULL;
 
+        // ============================
         /* Issue RDMA Read. */
+        // ============================
         if (cb->read_inv)
             cb->rdma_sq_wr.wr.opcode = IB_WR_RDMA_READ_WITH_INV;
         else {
@@ -842,10 +852,13 @@ static void krping_test_server(struct krping_cb *cb)
             break;
         }
         cb->rdma_sq_wr.wr.next = NULL;
+        serv_rd_issue_t = rdtsc();
 
         DEBUG_LOG("server posted rdma read req \n");
 
+        // ============================
         /* Wait for read completion */
+        // ============================
         wait_event_interruptible(cb->sem, 
                 cb->state >= RDMA_READ_COMPLETE);
         if (cb->state != RDMA_READ_COMPLETE) {
@@ -854,6 +867,7 @@ static void krping_test_server(struct krping_cb *cb)
                     cb->state);
             break;
         }
+        serv_wait_rd_t = rdtsc();
         DEBUG_LOG("server received read complete\n");
 
         // [yans3]
@@ -861,8 +875,12 @@ static void krping_test_server(struct krping_cb *cb)
         //      start compression
         // ============================
         size_t dst_len;
+
         u8* wrkmem = kmalloc(LZO1X_1_MEM_COMPRESS, GFP_KERNEL);
+
+        serv_comp_t = rdtsc();
         ret = lzo1x_1_compress(cb->rdma_buf, 4096, cb->rdma_buf + 4096, &dst_len, wrkmem);
+        serv_comp_t = rdtsc();
 
         // ============================
         //      end compression
@@ -880,54 +898,14 @@ static void krping_test_server(struct krping_cb *cb)
         }
 
         DEBUG_LOG("compression complete\n");
-
-
-        /* Display data in recv buf */
-        // if (cb->verbose)
-        // 	printk(KERN_INFO PFX
-        // 		"server ping data (64B max): |%.64s|\n",
-        // 		cb->rdma_buf);
-
-        /*
-        // [hj14] after server recieved the data
-        int i, page_size, cmp_res;
-        unsigned char result;
-        page_size = cb->size/2;
-        for(i = 0; i < page_size; i++){
-        if ((cmp_res = cb->rdma_buf[i] - cb->rdma_buf[i+page_size]) != 0)
-        break;
-        }*/
         if (cb->verbose)
             printk(KERN_INFO PFX
                     "compress status: %d/ compressed len: %d\n",
                     ret, dst_len);
 
-        // pr_info("compare result:%d, %c.\n", cmp_res, cb->rdma_buf[0]);
-
-        // /* Tell client to continue */
-        // if (cb->server && cb->server_invalidate) {
-        // 	cb->sq_wr.ex.invalidate_rkey = cb->remote_rkey;
-        // 	cb->sq_wr.opcode = IB_WR_SEND_WITH_INV;
-        // 	DEBUG_LOG("send-w-inv rkey 0x%x\n", cb->remote_rkey);
-        // } 
-        // ret = ib_post_send(cb->qp, &cb->sq_wr, &bad_wr);
-        // if (ret) {
-        // 	printk(KERN_ERR PFX "post send error %d\n", ret);
-        // 	break;
-        // }
-        // DEBUG_LOG("server posted go ahead\n");
-
-        // /* Wait for client's RDMA STAG/TO/Len */
-        // wait_event_interruptible(cb->sem, cb->state >= RDMA_WRITE_ADV);
-        // if (cb->state != RDMA_WRITE_ADV) {
-        // 	printk(KERN_ERR PFX 
-        // 	       "wait for RDMA_WRITE_ADV state %d\n",
-        // 	       cb->state);
-        // 	break;
-        // }
-        // DEBUG_LOG("server received sink adv\n");
-
+        // ============================
         /* RDMA Write echo data */
+        // ============================
         cb->rdma_sq_wr.wr.opcode = IB_WR_RDMA_WRITE;
         cb->rdma_sq_wr.rkey = cb->remote_rkey;
         cb->rdma_sq_wr.remote_addr = cb->remote_addr;
@@ -948,8 +926,10 @@ static void krping_test_server(struct krping_cb *cb)
             printk(KERN_ERR PFX "post send error %d\n", ret);
             break;
         }
+        serv_wr_result_t = rdtsc();
 
-        /* Wait for completion */
+        /*
+        // Wait for completion
         ret = wait_event_interruptible(cb->sem, cb->state >= 
                 RDMA_WRITE_COMPLETE);
         if (cb->state != RDMA_WRITE_COMPLETE) {
@@ -962,7 +942,7 @@ static void krping_test_server(struct krping_cb *cb)
 
         cb->state = CONNECTED;
 
-        /* Tell client to begin again */
+        // Tell client to begin again
         if (cb->server && cb->server_invalidate) {
             cb->sq_wr.ex.invalidate_rkey = cb->remote_rkey;
             cb->sq_wr.opcode = IB_WR_SEND_WITH_INV;
@@ -974,6 +954,28 @@ static void krping_test_server(struct krping_cb *cb)
             break;
         }
         DEBUG_LOG("server posted go ahead\n");
+        */
+
+        serv_wait_req_sum += serv_wait_req_t - start_t;
+        serv_rd_issue_sum += serv_rd_issue_t - serv_wait_req_t;
+        serv_wait_rd_sum += serv_wait_rd_t - serv_rd_issue_t;
+        serv_comp_sum += serv_comp_t - serv_wait_rd_t;
+        serv_wr_result_sum += serv_wr_result_t - serv_wait_rd_t;
+        serv_overall_sum += end_t - start_t;
+
+        // either serv or client will inc operation_cnt
+        operation_cnt++;
+        
+        if (operation_cnt % 100 == 0) {
+            pr_info("========================== %d", operation_cnt); 
+            pr_info("serv_comp     : %d", serv_comp_sum / operation_cnt);
+            pr_info("serv_wait     : %d", serv_wait_req_sum / operation_cnt);
+            pr_info("serv_rd_issue : %d", serv_rd_issue_sum / operation_cnt);
+            pr_info("serv_wait_rd  : %d", serv_wait_rd_sum / operation_cnt);
+            pr_info("serv_wr_result: %d", serv_wr_result_sum / operation_cnt);
+            pr_info("serv_overall  : %d", serv_overall_sum / operation_cnt);
+            pr_info("=========================="); 
+        }
     }
 }
 
@@ -1560,8 +1562,7 @@ err0:
  * == loop ==
  */
 
-uint64_t operation_cnt = 0;
-uint64_t send_prep_sum, post_send_sum, wake_up_sum, overall_sum;
+static uint64_t send_prep_sum, post_send_sum, wake_up_sum, overall_sum;
 
 static int krping_test_client(struct krping_cb *cb)
 {
@@ -2377,6 +2378,16 @@ static ssize_t krping_write_proc(struct file * file, const char __user * buffer,
         return (int) count;
 }
 
+void clear_stat_counter(void) {
+    operation_cnt = 1;
+    send_prep_sum = 0;
+    post_send_sum = 0;
+    wake_up_sum = 0;
+    overall_sum = 0;
+
+    serv_comp_sum, serv_wait_req_sum, serv_rd_issue_sum, serv_wait_rd_sum, serv_overall_sum, serv_wr_result_sum = 0;
+}
+
 static int krping_read_open(struct inode *inode, struct file *file)
 {
     return single_open(file, krping_read_proc, inode->i_private);
@@ -2394,12 +2405,8 @@ static struct file_operations krping_ops = {
 static int __init krping_init(void)
 {
     DEBUG_LOG("krping_init\n");
-
-    operation_cnt = 1;
-    send_prep_sum = 0;
-    post_send_sum = 0;
-    wake_up_sum = 0;
-    overall_sum = 0;
+    
+    clear_stat_counter();
 
     krping_proc = proc_create("krping", 0666, NULL, &krping_ops);
     if (krping_proc == NULL) {
@@ -2412,8 +2419,10 @@ static int __init krping_init(void)
 static void __exit krping_exit(void)
 {
     DEBUG_LOG("krping_exit\n");
+    clear_stat_counter();
     remove_proc_entry("krping", NULL);
 }
+
 
 module_init(krping_init);
 module_exit(krping_exit);
