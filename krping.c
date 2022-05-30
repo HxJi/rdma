@@ -70,6 +70,8 @@ MODULE_AUTHOR("Steve Wise");
 MODULE_DESCRIPTION("RDMA ping server");
 MODULE_LICENSE("Dual BSD/GPL");
 
+#define EMPTY_PROCESSING
+
 //#define ON_ARM
 #ifdef ON_ARM
 u64 rdtsc(void)
@@ -807,6 +809,8 @@ static void krping_test_server(struct krping_cb *cb)
         }
         serv_wait_req_t = rdtsc();
 
+#ifndef EMPTY_PROCESSING
+
         DEBUG_LOG("server received sink adv\n");
 
         cb->rdma_sq_wr.rkey = cb->remote_rkey;
@@ -890,6 +894,8 @@ static void krping_test_server(struct krping_cb *cb)
             printk(KERN_INFO PFX
                     "compress status: %d/ compressed len: %d\n",
                     ret, dst_len);
+
+#endif // EMPTY_PROCESSING
 
         // ============================
         /* RDMA Write echo data */
@@ -1154,7 +1160,7 @@ static int krping_test_client(struct krping_cb *cb)
     send_prep_time = rdtsc();
 
     // =================================
-    // one sided rdam, write
+    // client SEND, two-sided RDMA
     // =================================
     ret = ib_post_send(cb->qp, &cb->sq_wr, &bad_wr);
     if (ret) {
