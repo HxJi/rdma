@@ -944,6 +944,8 @@ static void krping_test_server(struct krping_cb *cb)
         DEBUG_LOG("server posted go ahead\n");
         */
 
+        cb->state = CONNECTED;
+
         serv_wait_req_sum += serv_wait_req_t - start_t;
         serv_rd_issue_sum += serv_rd_issue_t - serv_wait_req_t;
         serv_wait_rd_sum += serv_wait_rd_t - serv_rd_issue_t;
