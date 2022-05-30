@@ -916,7 +916,6 @@ static void krping_test_server(struct krping_cb *cb)
         }
         serv_wr_result_t = rdtsc();
 
-        /*
         // Wait for completion
         ret = wait_event_interruptible(cb->sem, cb->state >= 
                 RDMA_WRITE_COMPLETE);
@@ -930,6 +929,7 @@ static void krping_test_server(struct krping_cb *cb)
 
         cb->state = CONNECTED;
 
+        /*
         // Tell client to begin again
         if (cb->server && cb->server_invalidate) {
             cb->sq_wr.ex.invalidate_rkey = cb->remote_rkey;
@@ -943,8 +943,6 @@ static void krping_test_server(struct krping_cb *cb)
         }
         DEBUG_LOG("server posted go ahead\n");
         */
-
-        cb->state = CONNECTED;
 
         serv_wait_req_sum += serv_wait_req_t - start_t;
         serv_rd_issue_sum += serv_rd_issue_t - serv_wait_req_t;
