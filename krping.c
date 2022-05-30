@@ -57,6 +57,8 @@
 #include <rdma/ib_verbs.h>
 #include <rdma/rdma_cm.h>
 
+#include <linux/delay.h>
+
 #include "getopt.h"
 
 #define PFX "krping: "
@@ -895,6 +897,7 @@ static void krping_test_server(struct krping_cb *cb)
                     "compress status: %d/ compressed len: %d\n",
                     ret, dst_len);
 
+        usleep_range(1000000, 1000001);
 #endif // EMPTY_PROCESSING
 
         // ============================
