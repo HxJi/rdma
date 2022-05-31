@@ -73,9 +73,12 @@ MODULE_DESCRIPTION("RDMA ping server");
 MODULE_LICENSE("Dual BSD/GPL");
 
 #define EMPTY_PROCESSING
+#define ADD_WAIT
 
-//#define ON_ARM
+#define ON_ARM
 #ifdef ON_ARM
+#define isb()    asm volatile("isb" : : : "memory")
+#define rte_isb() isb()
 u64 rdtsc(void)
 {
     u64 val;
@@ -87,11 +90,13 @@ u64 rdtsc(void)
      * bits wide and it is attributed with the flag 'cap_user_time_short'
      * is true.
      */
+	// TODO, https://stackoverflow.com/questions/32481867/how-is-this-calculation-working
+	rte_isb();
     asm volatile("mrs %0, cntvct_el0" : "=r" (val));
 
     return val;
 }
-#endif
+#endif // ON_ARM
 
 static const struct krping_option krping_opts[] = {
     {"count", OPT_INT, 'C'},
@@ -897,8 +902,6 @@ static void krping_test_server(struct krping_cb *cb)
                     "compress status: %d/ compressed len: %d\n",
                     ret, dst_len);
 
-        usleep_range(1000000, 1000001);
-#endif // EMPTY_PROCESSING
 
         // ============================
         /* RDMA Write echo data */
@@ -935,6 +938,7 @@ static void krping_test_server(struct krping_cb *cb)
             break;
         }
         DEBUG_LOG("server rdma write complete \n");
+#endif // EMPTY_PROCESSING
 
         cb->state = CONNECTED;
 
@@ -950,6 +954,10 @@ static void krping_test_server(struct krping_cb *cb)
             break;
         }
         DEBUG_LOG("server posted go ahead\n");
+
+#ifdef ADD_WAIT
+        usleep_range(500, 501);
+#endif // ADD_WAIT
 
         end_t = rdtsc();
 
