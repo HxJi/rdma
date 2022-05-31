@@ -72,29 +72,34 @@ MODULE_AUTHOR("Steve Wise");
 MODULE_DESCRIPTION("RDMA ping server");
 MODULE_LICENSE("Dual BSD/GPL");
 
-#define EMPTY_PROCESSING
-#define ADD_WAIT
+//#define EMPTY_PROCESSING
+//#define ADD_WAIT
 
-#define ON_ARM
+//#define ON_ARM
 #ifdef ON_ARM
 #define isb()    asm volatile("isb" : : : "memory")
-#define rte_isb() isb()
-u64 rdtsc(void)
+static inline uint64_t
+arm64_pmccntr(void)
 {
-    u64 val;
-
-    /*
-     * According to ARM DDI 0487F.c, from Armv8.0 to Armv8.5 inclusive, the
-     * system counter is at least 56 bits wide; from Armv8.6, the counter
-     * must be 64 bits wide.  So the system counter could be less than 64
-     * bits wide and it is attributed with the flag 'cap_user_time_short'
-     * is true.
-     */
-	// TODO, https://stackoverflow.com/questions/32481867/how-is-this-calculation-working
-	rte_isb();
-    asm volatile("mrs %0, cntvct_el0" : "=r" (val));
-
-    return val;
+   uint64_t tsc;
+   asm volatile("mrs %0, pmccntr_el0" : "=r"(tsc));
+   return tsc;
+}
+static inline uint64_t
+rdtsc(void)
+{
+   return arm64_pmccntr();
+}
+static void enable_pmu_pmccntr(void)
+{
+   u64 val = 0;
+   asm volatile("msr pmintenset_el1, %0" : : "r" ((u64)(0 << 31)));
+   asm volatile("msr pmcntenset_el0, %0" :: "r" ((u64)(1 << 31)));
+   asm volatile("msr pmuserenr_el0, %0" : : "r"((u64)(1 << 0) | (u64)(1 << 2)));
+   asm volatile("mrs %0, pmcr_el0" : "=r" (val));
+   val |= ((u64)(1 << 0) | (u64)(1 << 2));
+   isb();
+   asm volatile("msr pmcr_el0, %0" : : "r" (val));
 }
 #endif // ON_ARM
 
@@ -793,7 +798,7 @@ static void krping_format_send(struct krping_cb *cb, u64 buf)
 }
 
 static uint64_t operation_cnt = 0;
-static uint64_t serv_comp_sum, serv_wait_req_sum, serv_rd_issue_sum, serv_wait_rd_sum, serv_overall_sum, serv_wr_result_sum;
+static uint64_t serv_comp_sum, serv_wait_req_sum, serv_rd_issue_sum, serv_wait_rd_sum, serv_overall_sum, serv_wr_result_sum, delay_sum;
 static void krping_test_server(struct krping_cb *cb)
 {
     struct ib_send_wr inv;
@@ -877,7 +882,6 @@ static void krping_test_server(struct krping_cb *cb)
 
         u8* wrkmem = kmalloc(LZO1X_1_MEM_COMPRESS, GFP_KERNEL);
 
-        serv_comp_t = rdtsc();
         ret = lzo1x_1_compress(cb->rdma_buf, 4096, cb->rdma_buf + 4096, &dst_len, wrkmem);
         serv_comp_t = rdtsc();
 
@@ -956,7 +960,11 @@ static void krping_test_server(struct krping_cb *cb)
         DEBUG_LOG("server posted go ahead\n");
 
 #ifdef ADD_WAIT
+		u64 delay_start, delay_end;
+		delay_start = rdtsc();
         usleep_range(500, 501);
+		delay_end = rdtsc();
+		delay_sum += delay_end - delay_start;
 #endif // ADD_WAIT
 
         end_t = rdtsc();
@@ -972,13 +980,16 @@ static void krping_test_server(struct krping_cb *cb)
         operation_cnt++;
         
         if (operation_cnt % 100 == 0) {
-            pr_info("========================== %d", operation_cnt); 
-            pr_info("serv_comp     : %d", serv_comp_sum / operation_cnt);
-            pr_info("serv_wait     : %d", serv_wait_req_sum / operation_cnt);
-            pr_info("serv_rd_issue : %d", serv_rd_issue_sum / operation_cnt);
-            pr_info("serv_wait_rd  : %d", serv_wait_rd_sum / operation_cnt);
-            pr_info("serv_wr_result: %d", serv_wr_result_sum / operation_cnt);
-            pr_info("serv_overall  : %d", serv_overall_sum / operation_cnt);
+            pr_info("========================== %ld", operation_cnt); 
+            pr_info("serv_comp     : %llu", serv_comp_sum / operation_cnt);
+            pr_info("serv_wait     : %llu", serv_wait_req_sum / operation_cnt);
+            pr_info("serv_rd_issue : %llu", serv_rd_issue_sum / operation_cnt);
+            pr_info("serv_wait_rd  : %llu", serv_wait_rd_sum / operation_cnt);
+            pr_info("serv_wr_result: %llu", serv_wr_result_sum / operation_cnt);
+#ifdef ADD_WAIT
+            pr_info("delay         : %llu", delay_sum / operation_cnt);
+#endif // ADD_WAIT
+            pr_info("serv_overall  : %llu", serv_overall_sum / operation_cnt);
             pr_info("=========================="); 
         }
     }
@@ -1223,10 +1234,10 @@ static int krping_test_client(struct krping_cb *cb)
 
     if (operation_cnt % 100 == 0) {
         pr_info("========================== %d", operation_cnt); 
-        pr_info("send_prep: %d", send_prep_sum / operation_cnt);
-        pr_info("post_send: %d", post_send_sum / operation_cnt);
-        pr_info("wake_up  : %d", wake_up_sum / operation_cnt);
-        pr_info("overall  : %d", overall_sum / operation_cnt);
+        pr_info("send_prep: %llu", send_prep_sum / operation_cnt);
+        pr_info("post_send: %llu", post_send_sum / operation_cnt);
+        pr_info("wake_up  : %llu", wake_up_sum / operation_cnt);
+        pr_info("overall  : %llu", overall_sum / operation_cnt);
         pr_info("=========================="); 
     }
     return 0;
@@ -1690,6 +1701,8 @@ void clear_stat_counter(void) {
     overall_sum = 0;
 
     serv_comp_sum, serv_wait_req_sum, serv_rd_issue_sum, serv_wait_rd_sum, serv_overall_sum, serv_wr_result_sum = 0;
+	delay_sum = 0;
+	serv_wait_rd_sum = 0;
 }
 
 static int krping_read_open(struct inode *inode, struct file *file)
@@ -1711,6 +1724,10 @@ static int __init krping_init(void)
     DEBUG_LOG("krping_init\n");
     
     clear_stat_counter();
+
+#ifdef ON_ARM
+	//enable_pmu_pmccntr();
+#endif
 
     krping_proc = proc_create("krping", 0666, NULL, &krping_ops);
     if (krping_proc == NULL) {
