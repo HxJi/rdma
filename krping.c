@@ -75,7 +75,7 @@ MODULE_LICENSE("Dual BSD/GPL");
 //#define EMPTY_PROCESSING
 //#define ADD_WAIT
 
-//#define ON_ARM
+#define ON_ARM
 #ifdef ON_ARM
 #define isb()    asm volatile("isb" : : : "memory")
 static inline uint64_t
@@ -1170,15 +1170,6 @@ static int krping_test_client(struct krping_cb *cb)
 
     start_time = rdtsc();
 
-    // =================================
-    // prepare send
-    // =================================
-    krping_format_send(cb, cb->rdma_dma_addr);
-    if (cb->state == ERROR) {
-        printk(KERN_ERR PFX "krping_format_send failed\n");
-        return -1;
-        // break;
-    }
     send_prep_time = rdtsc();
 
     // =================================
@@ -1403,6 +1394,17 @@ static int krping_run_client(struct krping_cb *cb)
 
     // extract the loop on client side to this function
     int i = 0;
+
+    // =================================
+    // prepare send
+    // =================================
+    krping_format_send(cb, cb->rdma_dma_addr);
+    if (cb->state == ERROR) {
+        printk(KERN_ERR PFX "krping_format_send failed\n");
+        return -1;
+        // break;
+    }
+
     for(i = 0; i < cb->count; i++){
         ret = krping_test_client(cb);
         //pr_info("krping_test_client result:%d", ret);
