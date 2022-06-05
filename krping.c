@@ -72,10 +72,12 @@ MODULE_AUTHOR("Steve Wise");
 MODULE_DESCRIPTION("RDMA ping server");
 MODULE_LICENSE("Dual BSD/GPL");
 
+#define SERVER_READ
+
 //#define EMPTY_PROCESSING
 //#define ADD_WAIT
 
-#define ON_ARM
+//#define ON_ARM
 #ifdef ON_ARM
 #define isb()    asm volatile("isb" : : : "memory")
 static inline uint64_t
@@ -1172,6 +1174,7 @@ static int krping_test_client(struct krping_cb *cb)
 
     send_prep_time = rdtsc();
 
+#ifdef SERVER_READ
     // =================================
     // client SEND, two-sided RDMA
     // =================================
@@ -1196,6 +1199,12 @@ static int krping_test_client(struct krping_cb *cb)
         return -5;
     }
     wake_up_time = rdtsc();
+
+#else
+    
+
+#endif // SERVER_READ
+
 
     // rdma buf 
     //      byte 0 - 3 -- compression ret
