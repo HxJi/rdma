@@ -809,6 +809,11 @@ static void krping_test_server(struct krping_cb *cb)
     uint64_t serv_comp_t, serv_wait_req_t, serv_rd_issue_t, serv_wait_rd_t, serv_wr_result_t;
     uint64_t start_t, end_t;
 
+    cb->rdma_sq_wr.rkey = cb->remote_rkey;
+    cb->rdma_sq_wr.remote_addr = cb->remote_addr;
+    cb->rdma_sq_wr.wr.sg_list->length = cb->remote_len;
+    cb->rdma_sgl.lkey = krping_rdma_rkey(cb, cb->rdma_dma_addr, !cb->read_inv);
+
     while (1) {
         // ============================
         /* Wait for client's Start STAG/TO/Len */
@@ -827,10 +832,6 @@ static void krping_test_server(struct krping_cb *cb)
 
         DEBUG_LOG("server received sink adv\n");
 
-        cb->rdma_sq_wr.rkey = cb->remote_rkey;
-        cb->rdma_sq_wr.remote_addr = cb->remote_addr;
-        cb->rdma_sq_wr.wr.sg_list->length = cb->remote_len;
-        cb->rdma_sgl.lkey = krping_rdma_rkey(cb, cb->rdma_dma_addr, !cb->read_inv);
         cb->rdma_sq_wr.wr.next = NULL;
 
         // ============================
@@ -1200,7 +1201,18 @@ static int krping_test_client(struct krping_cb *cb)
     }
     wake_up_time = rdtsc();
 
-#else
+#else 
+    // server will poll on this region, written by the client
+    cb->rdma_sq_wr.wr.opcode = IB_WR_RDMA_WRITE;
+    cb->rdma_sq_wr.rkey = cb->remote_rkey;
+    cb->rdma_sq_wr.remote_addr = cb->remote_addr;
+    cb->rdma_sq_wr.wr.sg_list->length = cb->size;
+    if (cb->local_dma_lkey)
+        cb->rdma_sgl.lkey = cb->pd->local_dma_lkey;
+    else 
+        cb->rdma_sgl.lkey = krping_rdma_rkey(cb, cb->rdma_dma_addr, 0);
+
+    ret = ib_post_send(cb->qp, &cb->rdma_sq_wr.wr, &bad_wr);
     
 
 #endif // SERVER_READ
