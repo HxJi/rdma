@@ -50,6 +50,7 @@
 #include <linux/proc_fs.h>
 
 #include <linux/lzo.h>
+#include <linux/random.h>
 
 #include <asm/atomic.h>
 #include <asm/pci.h>
@@ -76,6 +77,7 @@ MODULE_LICENSE("Dual BSD/GPL");
 
 //#define EMPTY_PROCESSING
 //#define ADD_WAIT
+#define CHECK_RESULT
 
 //#define ON_ARM
 #ifdef ON_ARM
@@ -1147,29 +1149,24 @@ static uint64_t send_prep_sum, post_send_sum, wake_up_sum, overall_sum;
 
 static int krping_test_client(struct krping_cb *cb)
 {
-    int ping, start, cc, i, ret;
+    int ping, i, ret, half_size, rand;
     const struct ib_send_wr *bad_wr;
-    unsigned char c;
+    char* page_data;
 
     uint64_t start_time, send_prep_time, post_send_time, wake_up_time, end_time;
 
-    start = 65;
     ping = 1;
     cb->state = RDMA_READ_ADV;
 
+
     /* Put some ascii text in the buffer. */
-    c = start;
-    int half_size = cb->size/2;
+    half_size = cb->size/2;
+    page_data = kmalloc(4096, GFP_KERNEL);
     for (i = 0; i < half_size; i++) {
-        cb->rdma_buf[i] = c;
-        cb->rdma_buf[i+half_size] = c;
-        c++;
-        if (c > 122)
-            c = 65;
+        get_random_bytes(&rand, sizeof(rand));
+        page_data[i] = (char)rand;
     }
-    start++;
-    if (start > 122)
-        start = 65;
+    memcpy(cb->start_buf, page_data, 4096);
 
     start_time = rdtsc();
 
@@ -1237,6 +1234,16 @@ static int krping_test_client(struct krping_cb *cb)
     }
 
     end_time = rdtsc();
+
+#ifdef CHECK_RESULT
+    lzo1x_decompress_safe(&(cb->rdma_buf[4096]), dlen, cb->rdma_buf, 4096);
+    for (i = 0; i < 4096; i++) {
+        if (cb->rdma_buf[i] != page_data[i]) {
+            printk("[test_client ERROR] compression incorrect, decompressed data mismatched at:%d, rdma:%x, page_data%x\n", i, cb->rdma_buf[i], page_data[i]);
+            return 0;
+        }
+    } 
+#endif // CHECK_RESULT
 
     operation_cnt++;
     send_prep_sum += send_prep_time - start_time;
